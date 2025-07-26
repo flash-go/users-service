@@ -1,0 +1,288 @@
+package main
+
+// @title		Users
+// @version		1.0
+// @BasePath	/
+
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+
+import (
+	"log"
+	"os"
+	"strconv"
+	"time"
+
+	"github.com/flash-go/flash/http"
+	"github.com/flash-go/flash/http/server"
+	"github.com/flash-go/sdk/config"
+	"github.com/flash-go/sdk/errors"
+	"github.com/flash-go/sdk/infra"
+	"github.com/flash-go/sdk/logger"
+	"github.com/flash-go/sdk/state"
+	"github.com/flash-go/sdk/telemetry"
+	_ "github.com/flash-go/users-service/docs"
+	httpHandlerAdapter "github.com/flash-go/users-service/internal/adapter/handler/http"
+	jwtRepositoryAdapter "github.com/flash-go/users-service/internal/adapter/repository/jwt"
+	usersRepositoryAdapter "github.com/flash-go/users-service/internal/adapter/repository/users"
+	service "github.com/flash-go/users-service/internal/service"
+	_ "github.com/joho/godotenv/autoload"
+)
+
+const (
+	collectGoRuntimeMetricsTimeout   = 10 * time.Second
+	telemetryCollectorOtelGrpcOptKey = "/telemetry/collector/grpc"
+	otpIssuerOptKey                  = "/otp/issuer"
+	jwtAccessTtlOptKey               = "/jwt/access/ttl"
+	jwtAccessKeyOptKey               = "/jwt/access/key"
+	jwtRefreshExpireOptKey           = "/jwt/refresh/ttl"
+	jwtRefreshKeyOptKey              = "/jwt/refresh/key"
+	jwtIssuerOptKey                  = "/jwt/issuer"
+	adminRoleOptKey                  = "/admin/role"
+)
+
+func main() {
+	// Create state service
+	stateService := state.New(os.Getenv("CONSUL_AGENT"))
+
+	// Create config
+	cfg := config.New(
+		stateService,
+		os.Getenv("SERVICE_NAME"),
+	)
+
+	// Create logger service
+	loggerService := logger.NewConsole()
+
+	// Convert log level to int
+	logLevel, err := strconv.Atoi(os.Getenv("LOG_LEVEL"))
+	if err != nil {
+		log.Fatalf("invalid log level")
+	}
+
+	// Set log level
+	loggerService.SetLevel(logLevel)
+
+	// Create telemetry service
+	telemetryService := telemetry.NewGrpc(
+		os.Getenv("SERVICE_NAME"),
+		cfg.Get(telemetryCollectorOtelGrpcOptKey), // OTEL collector gRPC endpoint
+	)
+
+	// Collect metrics
+	telemetryService.CollectGoRuntimeMetrics(collectGoRuntimeMetricsTimeout)
+
+	// Create postgres client
+	postgresClient := infra.NewPostgresClient(
+		&infra.PostgresClientConfig{
+			Cfg:        cfg,
+			Telemetry:  telemetryService,
+			Migrations: nil,
+		},
+	)
+
+	// Create redis client
+	redisClient := infra.NewRedisClient(
+		&infra.RedisClientConfig{
+			Cfg:       cfg,
+			Telemetry: telemetryService,
+		},
+	)
+
+	// Create http server
+	httpServer := server.New()
+
+	// Use telemetry service
+	httpServer.UseTelemetry(telemetryService)
+
+	// Use logger service
+	httpServer.UseLogger(loggerService)
+
+	// Use state service
+	httpServer.UseState(stateService)
+
+	// Use Swagger
+	httpServer.UseSwagger()
+
+	// Set error response status map
+	httpServer.SetErrorResponseStatusMap(
+		&server.ErrorResponseStatusMap{
+			errors.ErrBadRequest:   400,
+			errors.ErrUnauthorized: 401,
+			errors.ErrForbidden:    403,
+		},
+	)
+
+	// Create repository
+	jwtRepository := jwtRepositoryAdapter.NewJwtRepositoryAdapter(redisClient)
+	usersRepository := usersRepositoryAdapter.NewUsersRepositoryAdapter(postgresClient)
+
+	// Create services
+	otpService := service.NewOtpService(
+		&service.OtpServiceConfig{
+			OtpIssuer: cfg.Get(otpIssuerOptKey),
+		},
+	)
+	jwtService := service.NewJwtService(
+		&service.JwtServiceConfig{
+			JwtRepository:    jwtRepository,
+			JwtAccessExpire:  cfg.Get(jwtAccessTtlOptKey),
+			JwtRefreshExpire: cfg.Get(jwtRefreshExpireOptKey),
+			JwtAccessKey:     cfg.Get(jwtAccessKeyOptKey),
+			JwtRefreshKey:    cfg.Get(jwtRefreshKeyOptKey),
+			JwtIssuer:        cfg.Get(jwtIssuerOptKey),
+		},
+	)
+	usersService := service.NewUsersService(
+		&service.UsersServiceConfig{
+			UsersRepository: usersRepository,
+			OtpService:      otpService,
+			JwtService:      jwtService,
+		},
+	)
+
+	// Create handlers
+	usersHandler := httpHandlerAdapter.NewUsersHttpHandlerAdapter(
+		&httpHandlerAdapter.UsersHttpHandlerAdapterConfig{
+			UsersService: usersService,
+		},
+	)
+
+	// Get admin role id
+	adminRole := cfg.Get(adminRoleOptKey)
+
+	// Add routes
+	httpServer.
+		// Create user role (admin)
+		AddRoute(
+			http.MethodPost,
+			"/admin/users/roles",
+			usersHandler.AdminCreateRole,
+			usersHandler.AuthMiddleware(true, adminRole),
+		).
+		// Get user roles (admin)
+		AddRoute(
+			http.MethodGet,
+			"/admin/users/roles",
+			usersHandler.AdminGetRoles,
+			usersHandler.AuthMiddleware(true, adminRole),
+		).
+		// Delete user role (admin)
+		AddRoute(
+			http.MethodDelete,
+			"/admin/users/roles/{id}",
+			usersHandler.AdminDeleteRole,
+			usersHandler.AuthMiddleware(true, adminRole),
+		).
+		// Update user role (admin)
+		AddRoute(
+			http.MethodPatch,
+			"/admin/users/roles/{id}",
+			usersHandler.AdminUpdateRole,
+			usersHandler.AuthMiddleware(true, adminRole),
+		).
+		// Create user (admin)
+		AddRoute(
+			http.MethodPost,
+			"/admin/users",
+			usersHandler.AdminCreateUser,
+			usersHandler.AuthMiddleware(true, adminRole),
+		).
+		// Get users (admin)
+		AddRoute(
+			http.MethodGet,
+			"/admin/users",
+			usersHandler.AdminGetUsers,
+			usersHandler.AuthMiddleware(true, adminRole),
+		).
+		// Delete user (admin)
+		AddRoute(
+			http.MethodDelete,
+			"/admin/users/{id}",
+			usersHandler.AdminDeleteUser,
+			usersHandler.AuthMiddleware(true, adminRole),
+		).
+		// User profile
+		AddRoute(
+			http.MethodGet,
+			"/users/profile",
+			usersHandler.GetProfile,
+			usersHandler.AuthMiddleware(true),
+		).
+		// User auth 2FA validate
+		AddRoute(
+			http.MethodPost,
+			"/users/auth/2fa/validate",
+			usersHandler.Auth2faValidate,
+			usersHandler.AuthMiddleware(false),
+		).
+		// User auth 2FA settings
+		AddRoute(
+			http.MethodPost,
+			"/users/auth/2fa/settings",
+			usersHandler.Auth2faSettings,
+			usersHandler.AuthMiddleware(true),
+		).
+		// User auth 2FA enable
+		AddRoute(
+			http.MethodPost,
+			"/users/auth/2fa/enable",
+			usersHandler.Auth2faEnable,
+			usersHandler.AuthMiddleware(true),
+		).
+		// User auth 2FA disable
+		AddRoute(
+			http.MethodPost,
+			"/users/auth/2fa/disable",
+			usersHandler.Auth2faDisable,
+			usersHandler.AuthMiddleware(true),
+		).
+		// User auth
+		AddRoute(
+			http.MethodPost,
+			"/users/auth",
+			usersHandler.Auth,
+		).
+		// Renew JWT token
+		AddRoute(
+			http.MethodPost,
+			"/users/auth/token/renew",
+			usersHandler.AuthTokenRenew,
+		).
+		// Validate JWT token
+		AddRoute(
+			http.MethodPost,
+			"/users/auth/token/validate",
+			usersHandler.AuthTokenValidate,
+		)
+
+	// Convert service port to int
+	servicePort, err := strconv.Atoi(os.Getenv("SERVICE_PORT"))
+	if err != nil || servicePort == 0 {
+		log.Fatalf("invalid service port")
+	}
+
+	// Register service
+	if err := httpServer.RegisterService(
+		os.Getenv("SERVICE_NAME"),
+		os.Getenv("SERVICE_HOST"),
+		servicePort,
+	); err != nil {
+		loggerService.Log().Err(err).Send()
+	}
+
+	// Convert server port to int
+	serverPort, err := strconv.Atoi(os.Getenv("SERVER_PORT"))
+	if err != nil {
+		log.Fatal("invalid server port")
+	}
+
+	// Listen http server
+	if err := <-httpServer.Listen(
+		os.Getenv("SERVER_HOST"),
+		serverPort,
+	); err != nil {
+		loggerService.Log().Err(err).Send()
+	}
+}

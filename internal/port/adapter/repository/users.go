@@ -1,0 +1,58 @@
+package port
+
+import (
+	"context"
+
+	"github.com/flash-go/sdk/errors"
+	"github.com/flash-go/users-service/internal/domain/entity"
+)
+
+type UsersRepositoryAdapterPort interface {
+	// Roles
+	CreateRole(ctx context.Context, role *entity.Role) error
+	DeleteRoleById(ctx context.Context, id string) error
+	UpdateRole(ctx context.Context, role *entity.Role) error
+	UpdateRoleFieldsById(ctx context.Context, id string, fields *RoleFieldData) error
+	GetRoles(ctx context.Context) (*[]entity.Role, error)
+	GetRoleBy(ctx context.Context, field RoleField, value any) (*entity.Role, error)
+	ExistRoleBy(ctx context.Context, field RoleField, value any) (bool, error)
+	// Users
+	CreateUser(ctx context.Context, user *entity.User) error
+	DeleteUserById(ctx context.Context, id uint) error
+	UpdateUser(ctx context.Context, user *entity.User) error
+	UpdateUserFieldsById(ctx context.Context, id uint, fields *UserFieldData) error
+	GetUsers(ctx context.Context) (*[]entity.User, error)
+	GetUserBy(ctx context.Context, field UserField, value any) (*entity.User, error)
+	GetUserByLogin(ctx context.Context, login string) (*entity.User, error)
+	ExistUserBy(ctx context.Context, field UserField, value any) (bool, error)
+}
+
+type RoleField string
+
+const (
+	RoleFieldId   RoleField = "id"
+	RoleFieldName RoleField = "name"
+)
+
+type RoleFieldData map[RoleField]any
+
+type UserField string
+
+const (
+	UserFieldId        UserField = "id"
+	UserFieldUsername  UserField = "username"
+	UserFieldEmail     UserField = "email"
+	UserFieldPassword  UserField = "password"
+	UserFieldRoleId    UserField = "role_id"
+	UserFieldMfa       UserField = "mfa"
+	UserFieldOtpSecret UserField = "otp_secret"
+)
+
+type UserFieldData map[UserField]any
+
+var (
+	ErrUserRoleNotFound     = errors.New(errors.ErrBadRequest, "role_not_found")
+	ErrUserNotFound         = errors.New(errors.ErrBadRequest, "user_not_found")
+	ErrDeleteUserRoleIsUsed = errors.New(errors.ErrBadRequest, "role_is_used")
+	ErrDeleteUserIsUsed     = errors.New(errors.ErrBadRequest, "user_is_used")
+)

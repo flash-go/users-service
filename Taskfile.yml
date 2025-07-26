@@ -1,0 +1,67 @@
+version: '3'
+
+vars:
+  SERVER_ENV: .env.server
+  SERVER_CMD: ./cmd/server
+  SERVER_BIN: bin/server
+
+  MIGRATE_ENV: .env.migrate
+  MIGRATE_CMD: ./cmd/migrate
+  MIGRATE_BIN: bin/migrate
+
+  SEED_ENV: .env.seed
+  SEED_CMD: ./cmd/seed
+  SEED_BIN: bin/seed
+
+tasks:
+  default:
+    desc: Run server
+    cmds:
+      - task: server
+
+  build:
+    desc: Build all
+    cmds:
+      - go build -o {{.SERVER_BIN}} {{.SERVER_CMD}}
+      - go build -o {{.MIGRATE_BIN}} {{.MIGRATE_CMD}}
+      - go build -o {{.SEED_BIN}} {{.SEED_CMD}}
+
+  clean:
+    desc: Delete bin/
+    cmds:
+      - rm -rf bin/
+
+  server:
+    desc: Run server
+    dotenv: ['{{.SERVER_ENV}}']
+    cmds:
+      - go run {{.SERVER_CMD}}
+
+  migrate:
+    desc: Run migrate
+    dotenv: ['{{.MIGRATE_ENV}}']
+    cmds:
+      - go run {{.MIGRATE_CMD}}
+
+  seed:
+    desc: Run seed
+    dotenv: ['{{.SEED_ENV}}']
+    cmds:
+      - go run {{.SEED_CMD}}
+
+  install-swag:
+    desc: Install swag CLI
+    cmds:
+      - go install github.com/swaggo/swag/cmd/swag@latest
+
+  gen-docs:
+    desc: Generate Swagger docs
+    cmds:
+      - swag init -d cmd/server,internal
+
+  env:
+    desc: Create .env files
+    cmds:
+      - cp default.env.server {{.SERVER_ENV}}
+      - cp default.env.migrate {{.MIGRATE_ENV}}
+      - cp default.env.seed {{.SEED_ENV}}

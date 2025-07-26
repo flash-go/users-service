@@ -1,0 +1,17 @@
+.git
+.idea
+.vscode
+.DS_Store
+
+*.env
+*.env.*
+
+*.log
+*.tmp
+*.bak
+*.swp
+
+bin/
+
+Taskfile.yml
+README.md

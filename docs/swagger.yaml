@@ -1,0 +1,533 @@
+basePath: /
+definitions:
+  dto.AdminCreateUserRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+      role:
+        type: string
+      username:
+        type: string
+    type: object
+  dto.AdminCreateUserRoleRequest:
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+    type: object
+  dto.AdminUpdateUserRoleRequest:
+    properties:
+      name:
+        type: string
+    type: object
+  dto.AdminUserResponse:
+    properties:
+      created:
+        type: string
+      email:
+        type: string
+      id:
+        type: integer
+      mfa:
+        type: boolean
+      role:
+        $ref: '#/definitions/dto.AdminUserRoleResponse'
+      username:
+        type: string
+    type: object
+  dto.AdminUserRoleResponse:
+    properties:
+      created:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+    type: object
+  dto.UserAuth2faDisableRequest:
+    properties:
+      password:
+        type: string
+      token:
+        type: string
+    type: object
+  dto.UserAuth2faEnableRequest:
+    properties:
+      token:
+        type: string
+    type: object
+  dto.UserAuth2faSettingsRequest:
+    properties:
+      password:
+        type: string
+    type: object
+  dto.UserAuth2faSettingsResponse:
+    properties:
+      secret:
+        type: string
+      url:
+        type: string
+    type: object
+  dto.UserAuth2faValidateRequest:
+    properties:
+      token:
+        type: string
+    type: object
+  dto.UserAuth2faValidateResponse:
+    properties:
+      access_token:
+        type: string
+      refresh_token:
+        type: string
+    type: object
+  dto.UserAuthRequest:
+    properties:
+      login:
+        type: string
+      password:
+        type: string
+    type: object
+  dto.UserAuthResponse:
+    properties:
+      access_token:
+        type: string
+      mfa_required:
+        type: boolean
+      refresh_token:
+        type: string
+    type: object
+  dto.UserTokenRenewRequest:
+    properties:
+      refresh_token:
+        type: string
+    type: object
+  dto.UserTokenValidateRequest:
+    properties:
+      access_token:
+        type: string
+    type: object
+  dto.UserTokenValidateResponse:
+    properties:
+      audience:
+        items:
+          type: string
+        type: array
+      expires:
+        type: integer
+      id:
+        type: string
+      issued:
+        type: integer
+      issuer:
+        type: string
+      mfa:
+        type: boolean
+      role:
+        type: string
+      user:
+        type: integer
+    type: object
+info:
+  contact: {}
+  title: Users
+  version: "1.0"
+paths:
+  /admin/users:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              items:
+                $ref: '#/definitions/dto.AdminUserResponse'
+              type: array
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Get users (admin)
+      tags:
+      - users
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Create user (admin)
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.AdminCreateUserRequest'
+      produces:
+      - application/json
+      - text/plain
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.AdminUserResponse'
+        "400":
+          description: 'Possible error codes: bad_request:invalid_request, bad_request:invalid_username,
+            bad_request:invalid_email, bad_request:invalid_password, bad_request:user_exist_email,
+            bad_request:user_exist_username, bad_request:role_not_found'
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Create user (admin)
+      tags:
+      - users
+  /admin/users/{id}:
+    delete:
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: 'Possible error codes: bad_request:invalid_request, bad_request:user_not_found,
+            bad_request:user_is_used'
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Delete user (admin)
+      tags:
+      - users
+  /admin/users/roles:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              items:
+                $ref: '#/definitions/dto.AdminUserRoleResponse'
+              type: array
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Get user roles (admin)
+      tags:
+      - roles
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Create user role (admin)
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.AdminCreateUserRoleRequest'
+      produces:
+      - application/json
+      - text/plain
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.AdminUserRoleResponse'
+        "400":
+          description: 'Possible error codes: bad_request:invalid_request, bad_request:invalid_role_id,
+            bad_request:invalid_role_name, bad_request:role_exist_id, bad_request:role_exist_name'
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Create user role (admin)
+      tags:
+      - roles
+  /admin/users/roles/{id}:
+    delete:
+      parameters:
+      - description: Role ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: 'Possible error codes: bad_request:role_not_found, bad_request:role_is_used'
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Delete user role (admin)
+      tags:
+      - roles
+    patch:
+      consumes:
+      - application/json
+      parameters:
+      - description: Role ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update user role (admin)
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.AdminUpdateUserRoleRequest'
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: 'Possible error codes: bad_request:invalid_request, bad_request:role_not_found,
+            bad_request:invalid_role_name, bad_request:role_exist_name'
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Update user role (admin)
+      tags:
+      - roles
+  /users/auth:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: User auth
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UserAuthRequest'
+      produces:
+      - application/json
+      - text/plain
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.UserAuthResponse'
+        "400":
+          description: 'Possible error codes: bad_request:invalid_request, bad_request:invalid_login,
+            bad_request:invalid_password'
+          schema:
+            type: string
+        "401":
+          description: 'Possible error codes: unauthorized:invalid_credentials'
+          schema:
+            type: string
+      summary: User auth
+      tags:
+      - auth
+  /users/auth/2fa/disable:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: User auth 2FA disable
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UserAuth2faDisableRequest'
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: 'Possible error codes: bad_request:invalid_request, bad_request:invalid_password,
+            bad_request:invalid_token, bad_request:mfa_disabled'
+          schema:
+            type: string
+        "401":
+          description: 'Possible error codes: unauthorized:invalid_credentials'
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: User auth 2FA disable
+      tags:
+      - auth
+  /users/auth/2fa/enable:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: User auth 2FA enable
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UserAuth2faEnableRequest'
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: 'Possible error codes: bad_request:invalid_request, bad_request:invalid_token,
+            bad_request:ot_enabled'
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: User auth 2FA enable
+      tags:
+      - auth
+  /users/auth/2fa/settings:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: User auth 2FA settings
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UserAuth2faSettingsRequest'
+      produces:
+      - application/json
+      - text/plain
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.UserAuth2faSettingsResponse'
+        "400":
+          description: 'Possible error codes: bad_request:invalid_request, bad_request:invalid_password'
+          schema:
+            type: string
+        "401":
+          description: 'Possible error codes: unauthorized:invalid_credentials'
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: User auth 2FA settings
+      tags:
+      - auth
+  /users/auth/2fa/validate:
+    post:
+      consumes:
+      - application/json
+      description: Checking the two-factor authentication code
+      parameters:
+      - description: User auth 2FA validate
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UserAuth2faValidateRequest'
+      produces:
+      - application/json
+      - text/plain
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.UserAuth2faValidateResponse'
+        "400":
+          description: 'Possible error codes: bad_request:invalid_request, bad_request:invalid_token,
+            bad_request:mfa_disabled'
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: User auth 2FA validate
+      tags:
+      - auth
+  /users/auth/token/renew:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Renew JWT token
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UserTokenRenewRequest'
+      produces:
+      - application/json
+      - text/plain
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.UserAuthResponse'
+        "400":
+          description: 'Possible error codes: bad_request:invalid_request, bad_request:invalid_refresh_token,
+            bad_request:invalid_token, bad_request:token_already_used'
+          schema:
+            type: string
+      summary: Renew JWT token
+      tags:
+      - auth
+  /users/auth/token/validate:
+    post:
+      consumes:
+      - application/json
+      description: Parsing and validation of the access token. Mainly used in the
+        authorization mechanism across various microservices.
+      parameters:
+      - description: Validate JWT token
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UserTokenValidateRequest'
+      produces:
+      - application/json
+      - text/plain
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.UserTokenValidateResponse'
+        "400":
+          description: 'Possible error codes: bad_request:invalid_request, bad_request:invalid_access_token'
+          schema:
+            type: string
+        "401":
+          description: 'Possible error codes: unauthorized:invalid_token'
+          schema:
+            type: string
+      summary: Validate JWT token
+      tags:
+      - auth
+  /users/profile:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.AdminUserResponse'
+      security:
+      - BearerAuth: []
+      summary: User profile
+      tags:
+      - users
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
