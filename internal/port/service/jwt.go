@@ -7,6 +7,9 @@ import (
 	"github.com/flash-go/sdk/errors"
 )
 
+const JwtServiceTokenAudience = "users-service"
+const JwtServiceTokenKeyMinLen = 64 // bytes = 512 bits for HS512 (HMAC-SHA-512) keys
+
 type JwtServicePort interface {
 	NewTokens(ctx context.Context, data NewJwtTokenData) (*JwtTokensResult, error)
 	NewAccessToken(ctx context.Context, data NewJwtTokenData) (*string, error)

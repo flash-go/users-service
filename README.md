@@ -23,6 +23,7 @@ Microservice written in Go for managing authorization and authentication of user
     - Logging via zerolog.
 - Consul support for flexible configuration and service discovery.
 - Swagger/OpenAPI documentation.
+- Support HTTP transport.
 
 ## Setup
 

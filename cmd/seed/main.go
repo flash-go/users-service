@@ -6,44 +6,40 @@ import (
 	"log"
 	"os"
 
-	jwtRepositoryAdapter "github.com/flash-go/users-service/internal/adapter/repository/jwt"
-	usersRepositoryAdapter "github.com/flash-go/users-service/internal/adapter/repository/users"
-	"github.com/flash-go/users-service/internal/migrations"
-	servicePort "github.com/flash-go/users-service/internal/port/service"
-	service "github.com/flash-go/users-service/internal/service"
-
 	"github.com/flash-go/sdk/config"
 	"github.com/flash-go/sdk/infra"
 	"github.com/flash-go/sdk/services/users"
 	"github.com/flash-go/sdk/state"
-
+	"github.com/flash-go/sdk/telemetry"
+	jwtRepositoryAdapter "github.com/flash-go/users-service/internal/adapter/repository/jwt"
+	usersRepositoryAdapter "github.com/flash-go/users-service/internal/adapter/repository/users"
+	internalConfig "github.com/flash-go/users-service/internal/config"
+	"github.com/flash-go/users-service/internal/migrations"
+	servicePort "github.com/flash-go/users-service/internal/port/service"
+	service "github.com/flash-go/users-service/internal/service"
 	_ "github.com/joho/godotenv/autoload"
 )
 
 const (
-	jwtKeySize          = 64 // bytes = 512 bits for HS512 (HMAC-SHA-512) keys
-	jwtAccessKeyOptKey  = "/jwt/access/key"
-	jwtRefreshKeyOptKey = "/jwt/refresh/key"
-	adminRoleOptKey     = "/admin/role"
-	adminRoleId         = "admin"
-	adminUsername       = "admin"
+	adminRoleId   = "admin"
+	adminUsername = "admin"
 )
 
 var envMap = map[string]string{
-	"OTEL_COLLECTOR_GRPC": "/telemetry/collector/grpc",
-	"OTP_ISSUER":          "/otp/issuer",
-	"JWT_ACCESS_TTL":      "/jwt/access/ttl",
-	"JWT_REFRESH_TTL":     "/jwt/refresh/ttl",
-	"JWT_ISSUER":          "/jwt/issuer",
-	"POSTGRES_HOST":       "/postgres/host",
-	"POSTGRES_PORT":       "/postgres/port",
-	"POSTGRES_USER":       "/postgres/user",
-	"POSTGRES_PASSWORD":   "/postgres/password",
-	"POSTGRES_DB":         "/postgres/db",
-	"REDIS_HOST":          "/redis/host",
-	"REDIS_PORT":          "/redis/port",
-	"REDIS_PASSWORD":      "/redis/password",
-	"REDIS_DB":            "/redis/db",
+	"OTEL_COLLECTOR_GRPC": telemetry.OtelCollectorGrpcOptKey,
+	"OTP_ISSUER":          internalConfig.OtpIssuerOptKey,
+	"JWT_ACCESS_TTL":      internalConfig.JwtAccessTtlOptKey,
+	"JWT_REFRESH_TTL":     internalConfig.JwtRefreshTtlOptKey,
+	"JWT_ISSUER":          internalConfig.JwtIssuerOptKey,
+	"POSTGRES_HOST":       infra.PostgresHostOptKey,
+	"POSTGRES_PORT":       infra.PostgresPortOptKey,
+	"POSTGRES_USER":       infra.PostgresUserOptKey,
+	"POSTGRES_PASSWORD":   infra.PostgresPasswordOptKey,
+	"POSTGRES_DB":         infra.PostgresDbOptKey,
+	"REDIS_HOST":          infra.RedisHostOptKey,
+	"REDIS_PORT":          infra.RedisPortOptKey,
+	"REDIS_PASSWORD":      infra.RedisPasswordOptKey,
+	"REDIS_DB":            infra.RedisDbOptKey,
 }
 
 func main() {
@@ -51,33 +47,41 @@ func main() {
 	stateService := state.New(os.Getenv("CONSUL_AGENT"))
 
 	// Create config
-	cfg := config.New(stateService, os.Getenv("SERVICE_NAME"))
+	cfg := config.New(
+		stateService,
+		os.Getenv("SERVICE_NAME"),
+	)
 
-	// Create KV from key map
-	for env, key := range envMap {
-		if err := cfg.Set(key, os.Getenv(env)); err != nil {
-			log.Fatalf("failed to create KV [%s]: %v", key, err)
-		}
-	}
+	// Set KV from env map
+	cfg.SetEnvMap(envMap)
 
 	// Create KV JWT access key
-	jwtAccessKey := users.NewJwtKey(jwtKeySize)
-	if err := cfg.Set(jwtAccessKeyOptKey, jwtAccessKey); err != nil {
-		log.Fatalf("failed to create KV [%s]: %v", jwtAccessKeyOptKey, err)
+	jwtAccessKey := users.NewJwtKey(servicePort.JwtServiceTokenKeyMinLen)
+	if err := cfg.Set(
+		internalConfig.JwtAccessKeyOptKey,
+		jwtAccessKey,
+	); err != nil {
+		log.Fatalf("failed to create KV [%s]: %v", internalConfig.JwtAccessKeyOptKey, err)
 	}
 
 	// Create KV JWT refresh key
-	jwtRefreshKey := users.NewJwtKey(jwtKeySize)
-	if err := cfg.Set(jwtRefreshKeyOptKey, jwtRefreshKey); err != nil {
-		log.Fatalf("failed to create KV [%s]: %v", jwtRefreshKeyOptKey, err)
+	jwtRefreshKey := users.NewJwtKey(servicePort.JwtServiceTokenKeyMinLen)
+	if err := cfg.Set(
+		internalConfig.JwtRefreshKeyOptKey,
+		jwtRefreshKey,
+	); err != nil {
+		log.Fatalf("failed to create KV [%s]: %v", internalConfig.JwtRefreshKeyOptKey, err)
 	}
 
 	// Create KV admin role
-	if err := cfg.Set(adminRoleOptKey, adminRoleId); err != nil {
-		log.Fatalf("failed to create KV [%s]: %v", adminRoleOptKey, err)
+	if err := cfg.Set(
+		internalConfig.AdminRoleOptKey,
+		adminRoleId,
+	); err != nil {
+		log.Fatalf("failed to create KV [%s]: %v", internalConfig.AdminRoleOptKey, err)
 	}
 
-	// Create postgres client
+	// Create postgres client and run migrations
 	postgresClient := infra.NewPostgresClient(
 		&infra.PostgresClientConfig{
 			Cfg:        cfg,

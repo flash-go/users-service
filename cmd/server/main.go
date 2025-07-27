@@ -26,21 +26,12 @@ import (
 	httpHandlerAdapter "github.com/flash-go/users-service/internal/adapter/handler/http"
 	jwtRepositoryAdapter "github.com/flash-go/users-service/internal/adapter/repository/jwt"
 	usersRepositoryAdapter "github.com/flash-go/users-service/internal/adapter/repository/users"
+	internalConfig "github.com/flash-go/users-service/internal/config"
 	service "github.com/flash-go/users-service/internal/service"
 	_ "github.com/joho/godotenv/autoload"
 )
 
-const (
-	collectGoRuntimeMetricsTimeout   = 10 * time.Second
-	telemetryCollectorOtelGrpcOptKey = "/telemetry/collector/grpc"
-	otpIssuerOptKey                  = "/otp/issuer"
-	jwtAccessTtlOptKey               = "/jwt/access/ttl"
-	jwtAccessKeyOptKey               = "/jwt/access/key"
-	jwtRefreshExpireOptKey           = "/jwt/refresh/ttl"
-	jwtRefreshKeyOptKey              = "/jwt/refresh/key"
-	jwtIssuerOptKey                  = "/jwt/issuer"
-	adminRoleOptKey                  = "/admin/role"
-)
+const collectGoRuntimeMetricsTimeout = 10 * time.Second
 
 func main() {
 	// Create state service
@@ -65,15 +56,12 @@ func main() {
 	loggerService.SetLevel(logLevel)
 
 	// Create telemetry service
-	telemetryService := telemetry.NewGrpc(
-		os.Getenv("SERVICE_NAME"),
-		cfg.Get(telemetryCollectorOtelGrpcOptKey), // OTEL collector gRPC endpoint
-	)
+	telemetryService := telemetry.NewGrpc(cfg)
 
 	// Collect metrics
 	telemetryService.CollectGoRuntimeMetrics(collectGoRuntimeMetricsTimeout)
 
-	// Create postgres client
+	// Create postgres client without migrations
 	postgresClient := infra.NewPostgresClient(
 		&infra.PostgresClientConfig{
 			Cfg:        cfg,
@@ -111,6 +99,7 @@ func main() {
 			errors.ErrBadRequest:   400,
 			errors.ErrUnauthorized: 401,
 			errors.ErrForbidden:    403,
+			errors.ErrNotFound:     404,
 		},
 	)
 
@@ -121,17 +110,17 @@ func main() {
 	// Create services
 	otpService := service.NewOtpService(
 		&service.OtpServiceConfig{
-			OtpIssuer: cfg.Get(otpIssuerOptKey),
+			OtpIssuer: cfg.Get(internalConfig.OtpIssuerOptKey),
 		},
 	)
 	jwtService := service.NewJwtService(
 		&service.JwtServiceConfig{
 			JwtRepository:    jwtRepository,
-			JwtAccessExpire:  cfg.Get(jwtAccessTtlOptKey),
-			JwtRefreshExpire: cfg.Get(jwtRefreshExpireOptKey),
-			JwtAccessKey:     cfg.Get(jwtAccessKeyOptKey),
-			JwtRefreshKey:    cfg.Get(jwtRefreshKeyOptKey),
-			JwtIssuer:        cfg.Get(jwtIssuerOptKey),
+			JwtAccessExpire:  cfg.Get(internalConfig.JwtAccessTtlOptKey),
+			JwtRefreshExpire: cfg.Get(internalConfig.JwtRefreshTtlOptKey),
+			JwtAccessKey:     cfg.Get(internalConfig.JwtAccessKeyOptKey),
+			JwtRefreshKey:    cfg.Get(internalConfig.JwtRefreshKeyOptKey),
+			JwtIssuer:        cfg.Get(internalConfig.JwtIssuerOptKey),
 		},
 	)
 	usersService := service.NewUsersService(
@@ -149,8 +138,8 @@ func main() {
 		},
 	)
 
-	// Get admin role id
-	adminRole := cfg.Get(adminRoleOptKey)
+	// Get admin role
+	adminRole := cfg.Get(internalConfig.AdminRoleOptKey)
 
 	// Add routes
 	httpServer.
@@ -259,7 +248,7 @@ func main() {
 
 	// Convert service port to int
 	servicePort, err := strconv.Atoi(os.Getenv("SERVICE_PORT"))
-	if err != nil || servicePort == 0 {
+	if err != nil || servicePort <= 0 {
 		log.Fatalf("invalid service port")
 	}
 
@@ -274,7 +263,7 @@ func main() {
 
 	// Convert server port to int
 	serverPort, err := strconv.Atoi(os.Getenv("SERVER_PORT"))
-	if err != nil {
+	if err != nil || serverPort <= 0 {
 		log.Fatal("invalid server port")
 	}
 

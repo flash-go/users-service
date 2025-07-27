@@ -12,9 +12,6 @@ import (
 	"github.com/google/uuid"
 )
 
-const jwtTokenAudience = "users-service"
-const jwtTokenKeyMinLen = 64
-
 var jwtServiceSigningMethod = jwt.SigningMethodHS512
 
 type jwtTokenClaims struct {
@@ -123,8 +120,8 @@ func (s *jwtService) GetRefreshTokenJtiFromCache(ctx context.Context, user uint)
 
 func (s *jwtService) newToken(data servicePort.NewJwtTokenData, key, expire string) (*string, *jwtTokenClaims, error) {
 	// Checking the minimum key length
-	if len(key) < jwtTokenKeyMinLen {
-		return nil, nil, fmt.Errorf("signing key too short; must be at least %d characters", jwtTokenKeyMinLen)
+	if err := s.checkKeyLen(key); err != nil {
+		return nil, nil, err
 	}
 
 	// Parse duration
@@ -147,7 +144,7 @@ func (s *jwtService) newToken(data servicePort.NewJwtTokenData, key, expire stri
 			ExpiresAt: jwt.NewNumericDate(exp),
 			IssuedAt:  jwt.NewNumericDate(now),
 			Issuer:    s.jwtIssuer,
-			Audience:  []string{jwtTokenAudience},
+			Audience:  []string{servicePort.JwtServiceTokenAudience},
 		},
 	}
 
@@ -165,8 +162,8 @@ func (s *jwtService) newToken(data servicePort.NewJwtTokenData, key, expire stri
 
 func (s *jwtService) parseToken(token string, key string) (*servicePort.ParseJwtTokenResult, error) {
 	// Checking the minimum key length
-	if len(key) < jwtTokenKeyMinLen {
-		return nil, fmt.Errorf("signing key too short; must be at least %d characters", jwtTokenKeyMinLen)
+	if err := s.checkKeyLen(key); err != nil {
+		return nil, err
 	}
 
 	// Creating a parser with options
@@ -180,7 +177,7 @@ func (s *jwtService) parseToken(token string, key string) (*servicePort.ParseJwt
 		// this, we add a leeway (a time buffer).
 		jwt.WithLeeway(5*time.Second),
 		jwt.WithIssuer(s.jwtIssuer),
-		jwt.WithAudience(jwtTokenAudience),
+		jwt.WithAudience(servicePort.JwtServiceTokenAudience),
 		jwt.WithIssuedAt(),
 		jwt.WithExpirationRequired(),
 	)
@@ -212,4 +209,11 @@ func (s *jwtService) parseToken(token string, key string) (*servicePort.ParseJwt
 		Issuer:   claims.Issuer,
 		Audience: claims.Audience,
 	}, nil
+}
+
+func (s *jwtService) checkKeyLen(key string) error {
+	if len(key) < servicePort.JwtServiceTokenKeyMinLen {
+		return fmt.Errorf("signing key too short; must be at least %d characters", servicePort.JwtServiceTokenKeyMinLen)
+	}
+	return nil
 }

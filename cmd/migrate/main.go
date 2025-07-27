@@ -17,7 +17,10 @@ func main() {
 	stateService := state.New(os.Getenv("CONSUL_AGENT"))
 
 	// Create config
-	cfg := config.New(stateService, os.Getenv("SERVICE_NAME"))
+	cfg := config.New(
+		stateService,
+		os.Getenv("SERVICE_NAME"),
+	)
 
 	// Create postgres client and run mirgations
 	infra.NewPostgresClient(
