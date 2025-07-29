@@ -3,11 +3,10 @@ package port
 import (
 	"context"
 
-	"github.com/flash-go/sdk/errors"
 	"github.com/flash-go/users-service/internal/domain/entity"
 )
 
-type UsersServicePort interface {
+type Interface interface {
 	// Roles
 	CreateRole(ctx context.Context, data *CreateRoleData) (*entity.Role, error)
 	GetRoles(ctx context.Context) (*[]entity.Role, error)
@@ -96,17 +95,3 @@ type UserAuthTokenValidateResult struct {
 	Issuer   string
 	Audience []string
 }
-
-var (
-	ErrUserRoleNotFound  = errors.New(errors.ErrBadRequest, "role_not_found")
-	ErrUserRoleExistId   = errors.New(errors.ErrBadRequest, "role_exist_id")
-	ErrUserRoleExistName = errors.New(errors.ErrBadRequest, "role_exist_name")
-
-	ErrUserExistEmail    = errors.New(errors.ErrBadRequest, "user_exist_email")
-	ErrUserExistUsername = errors.New(errors.ErrBadRequest, "user_exist_username")
-
-	ErrUserAuthMfaDisabled = errors.New(errors.ErrBadRequest, "mfa_disabled")
-	ErrUserAuthMfaEnabled  = errors.New(errors.ErrBadRequest, "mfa_enabled")
-
-	ErrUserAuthRefreshTokenAlreadyUsed = errors.New(errors.ErrBadRequest, "token_already_used")
-)

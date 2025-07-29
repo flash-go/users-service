@@ -6,17 +6,27 @@ import (
 	"log"
 	"os"
 
+	// SDK
 	"github.com/flash-go/sdk/config"
 	"github.com/flash-go/sdk/infra"
 	"github.com/flash-go/sdk/services/users"
 	"github.com/flash-go/sdk/state"
 	"github.com/flash-go/sdk/telemetry"
-	jwtRepositoryAdapter "github.com/flash-go/users-service/internal/adapter/repository/jwt"
-	usersRepositoryAdapter "github.com/flash-go/users-service/internal/adapter/repository/users"
+
+	// Implementations
+	jwtRepositoryAdapterImpl "github.com/flash-go/users-service/internal/adapter/repository/jwt"
+	usersRepositoryAdapterImpl "github.com/flash-go/users-service/internal/adapter/repository/users"
+	jwtServiceImpl "github.com/flash-go/users-service/internal/service/jwt"
+	otpServiceImpl "github.com/flash-go/users-service/internal/service/otp"
+	usersServiceImpl "github.com/flash-go/users-service/internal/service/users"
+
+	// Ports
+	jwtServicePort "github.com/flash-go/users-service/internal/port/service/jwt"
+	usersServicePort "github.com/flash-go/users-service/internal/port/service/users"
+
+	// Other
 	internalConfig "github.com/flash-go/users-service/internal/config"
 	"github.com/flash-go/users-service/internal/migrations"
-	servicePort "github.com/flash-go/users-service/internal/port/service"
-	service "github.com/flash-go/users-service/internal/service"
 	_ "github.com/joho/godotenv/autoload"
 )
 
@@ -56,7 +66,7 @@ func main() {
 	cfg.SetEnvMap(envMap)
 
 	// Create KV JWT access key
-	jwtAccessKey := users.NewJwtKey(servicePort.JwtServiceTokenKeyMinLen)
+	jwtAccessKey := users.NewJwtKey(jwtServicePort.TokenKeyMinLen)
 	if err := cfg.Set(
 		internalConfig.JwtAccessKeyOptKey,
 		jwtAccessKey,
@@ -65,7 +75,7 @@ func main() {
 	}
 
 	// Create KV JWT refresh key
-	jwtRefreshKey := users.NewJwtKey(servicePort.JwtServiceTokenKeyMinLen)
+	jwtRefreshKey := users.NewJwtKey(jwtServicePort.TokenKeyMinLen)
 	if err := cfg.Set(
 		internalConfig.JwtRefreshKeyOptKey,
 		jwtRefreshKey,
@@ -99,17 +109,25 @@ func main() {
 	)
 
 	// Create repository
-	jwtRepository := jwtRepositoryAdapter.NewJwtRepositoryAdapter(redisClient)
-	usersRepository := usersRepositoryAdapter.NewUsersRepositoryAdapter(postgresClient)
+	jwtRepository := jwtRepositoryAdapterImpl.New(
+		&jwtRepositoryAdapterImpl.Config{
+			RedisClient: redisClient,
+		},
+	)
+	usersRepository := usersRepositoryAdapterImpl.New(
+		&usersRepositoryAdapterImpl.Config{
+			PostgresClient: postgresClient,
+		},
+	)
 
 	// Create services
-	otpService := service.NewOtpService(
-		&service.OtpServiceConfig{
+	otpService := otpServiceImpl.New(
+		&otpServiceImpl.Config{
 			OtpIssuer: os.Getenv("OTP_ISSUER"),
 		},
 	)
-	jwtService := service.NewJwtService(
-		&service.JwtServiceConfig{
+	jwtService := jwtServiceImpl.New(
+		&jwtServiceImpl.Config{
 			JwtRepository:    jwtRepository,
 			JwtAccessExpire:  os.Getenv("JWT_ACCESS_TTL"),
 			JwtRefreshExpire: os.Getenv("JWT_REFRESH_TTL"),
@@ -118,8 +136,8 @@ func main() {
 			JwtIssuer:        os.Getenv("JWT_ISSUER"),
 		},
 	)
-	usersService := service.NewUsersService(
-		&service.UsersServiceConfig{
+	usersService := usersServiceImpl.New(
+		&usersServiceImpl.Config{
 			UsersRepository: usersRepository,
 			OtpService:      otpService,
 			JwtService:      jwtService,
@@ -129,24 +147,24 @@ func main() {
 	// Create admin role
 	if _, err := usersService.CreateRole(
 		context.Background(),
-		&servicePort.CreateRoleData{
+		&usersServicePort.CreateRoleData{
 			Id:   adminRoleId,
 			Name: os.Getenv("ADMIN_ROLE_NAME"),
 		},
-	); err != nil && !errors.Is(err, servicePort.ErrUserRoleExistId) {
+	); err != nil && !errors.Is(err, usersServicePort.ErrRoleExistId) {
 		log.Printf("failed to create admin role: %v\n", err)
 	}
 
 	// Create admin user
 	if _, err := usersService.CreateUser(
 		context.Background(),
-		&servicePort.CreateUserData{
+		&usersServicePort.CreateUserData{
 			Username: adminUsername,
 			Email:    os.Getenv("ADMIN_EMAIL"),
 			Password: os.Getenv("ADMIN_PASSWORD"),
 			Role:     adminRoleId,
 		},
-	); err != nil && !errors.Is(err, servicePort.ErrUserExistUsername) && !errors.Is(err, servicePort.ErrUserExistEmail) {
+	); err != nil && !errors.Is(err, usersServicePort.ErrExistUsername) && !errors.Is(err, usersServicePort.ErrExistEmail) {
 		log.Printf("failed to create admin user: %v\n", err)
 	}
 }

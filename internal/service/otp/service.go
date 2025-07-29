@@ -4,33 +4,31 @@ import (
 	"context"
 	"fmt"
 
-	servicePort "github.com/flash-go/users-service/internal/port/service"
+	otpServicePort "github.com/flash-go/users-service/internal/port/service/otp"
 	"github.com/pquerna/otp/totp"
 )
 
-const otpServiceSecretSize = 15
-
-type OtpServiceConfig struct {
+type Config struct {
 	OtpIssuer string
 }
 
-func NewOtpService(config *OtpServiceConfig) servicePort.OtpServicePort {
-	return &otpService{
+func New(config *Config) otpServicePort.Interface {
+	return &service{
 		config.OtpIssuer,
 	}
 }
 
-type otpService struct {
+type service struct {
 	otpIssuer string
 }
 
-func (s *otpService) GenerateSecret(ctx context.Context, accountName string) (*string, error) {
+func (s *service) GenerateSecret(ctx context.Context, accountName string) (*string, error) {
 	// Generate key
 	key, err := totp.Generate(
 		totp.GenerateOpts{
 			Issuer:      s.otpIssuer,
 			AccountName: accountName,
-			SecretSize:  otpServiceSecretSize,
+			SecretSize:  secretSize,
 		},
 	)
 	if err != nil {
@@ -43,7 +41,7 @@ func (s *otpService) GenerateSecret(ctx context.Context, accountName string) (*s
 	return &secret, nil
 }
 
-func (s *otpService) GenerateUrl(accountName, secret string) string {
+func (s *service) GenerateUrl(accountName, secret string) string {
 	return fmt.Sprintf(
 		"otpauth://totp/%s:%s?algorithm=SHA1&digits=6&issuer=%s&period=30&secret=%s",
 		s.otpIssuer,
@@ -53,9 +51,9 @@ func (s *otpService) GenerateUrl(accountName, secret string) string {
 	)
 }
 
-func (s *otpService) ValidateToken(token, secret string) error {
+func (s *service) ValidateToken(token, secret string) error {
 	if !totp.Validate(token, secret) {
-		return servicePort.ErrOtpInvalidToken
+		return otpServicePort.ErrInvalidToken
 	}
 	return nil
 }

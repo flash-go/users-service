@@ -3,12 +3,13 @@ package main
 import (
 	"os"
 
-	"github.com/flash-go/users-service/internal/migrations"
-
+	// SDK
 	"github.com/flash-go/sdk/config"
 	"github.com/flash-go/sdk/infra"
 	"github.com/flash-go/sdk/state"
 
+	// Other
+	"github.com/flash-go/users-service/internal/migrations"
 	_ "github.com/joho/godotenv/autoload"
 )
 

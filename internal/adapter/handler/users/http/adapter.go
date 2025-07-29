@@ -4,25 +4,26 @@ import (
 	"slices"
 	"strconv"
 
+	"github.com/flash-go/sdk/errors"
 	dto "github.com/flash-go/users-service/internal/dto/users"
-	httpHandlerAdapterPort "github.com/flash-go/users-service/internal/port/adapter/handler/http"
-	servicePort "github.com/flash-go/users-service/internal/port/service"
+	httpUsersHandlerAdapterPort "github.com/flash-go/users-service/internal/port/adapter/handler/users/http"
+	usersServicePort "github.com/flash-go/users-service/internal/port/service/users"
 
 	"github.com/flash-go/flash/http/server"
 )
 
-type UsersHttpHandlerAdapterConfig struct {
-	UsersService servicePort.UsersServicePort
+type Config struct {
+	UsersService usersServicePort.Interface
 }
 
-func NewUsersHttpHandlerAdapter(config *UsersHttpHandlerAdapterConfig) httpHandlerAdapterPort.UsersHttpHandlerAdapterPort {
-	return &usersHttpHandlerAdapter{
+func New(config *Config) httpUsersHandlerAdapterPort.Interface {
+	return &adapter{
 		config.UsersService,
 	}
 }
 
-type usersHttpHandlerAdapter struct {
-	usersService servicePort.UsersServicePort
+type adapter struct {
+	usersService usersServicePort.Interface
 }
 
 // @Summary Create user role (admin)
@@ -34,11 +35,11 @@ type usersHttpHandlerAdapter struct {
 // @Success 201 {object} dto.AdminUserRoleResponse
 // @Failure 400 {string} string "Possible error codes: bad_request:invalid_request, bad_request:invalid_role_id, bad_request:invalid_role_name, bad_request:role_exist_id, bad_request:role_exist_name"
 // @Router /admin/users/roles [post]
-func (a *usersHttpHandlerAdapter) AdminCreateRole(ctx server.ReqCtx) {
+func (a *adapter) AdminCreateRole(ctx server.ReqCtx) {
 	// Parse request json body
 	var request dto.AdminCreateUserRoleRequest
 	if err := ctx.ReadJson(&request); err != nil {
-		ctx.WriteErrorResponse(httpHandlerAdapterPort.ErrCreateUserRoleInvalidRequest)
+		ctx.WriteErrorResponse(errors.ErrBadRequest)
 		return
 	}
 
@@ -49,7 +50,7 @@ func (a *usersHttpHandlerAdapter) AdminCreateRole(ctx server.ReqCtx) {
 	}
 
 	// Create data
-	data := servicePort.CreateRoleData(request)
+	data := usersServicePort.CreateRoleData(request)
 
 	// Create user role
 	role, err := a.usersService.CreateRole(
@@ -71,7 +72,7 @@ func (a *usersHttpHandlerAdapter) AdminCreateRole(ctx server.ReqCtx) {
 // @Produce json
 // @Success 200 {array} []dto.AdminUserRoleResponse
 // @Router /admin/users/roles [get]
-func (a *usersHttpHandlerAdapter) AdminGetRoles(ctx server.ReqCtx) {
+func (a *adapter) AdminGetRoles(ctx server.ReqCtx) {
 	// Get user roles
 	roles, err := a.usersService.GetRoles(ctx.Context())
 	if err != nil {
@@ -97,7 +98,7 @@ func (a *usersHttpHandlerAdapter) AdminGetRoles(ctx server.ReqCtx) {
 // @Success 200
 // @Failure 400 {string} string "Possible error codes: bad_request:role_not_found, bad_request:role_is_used"
 // @Router /admin/users/roles/{id} [delete]
-func (a *usersHttpHandlerAdapter) AdminDeleteRole(ctx server.ReqCtx) {
+func (a *adapter) AdminDeleteRole(ctx server.ReqCtx) {
 	// Delete role
 	if err := a.usersService.DeleteRole(
 		ctx.Context(),
@@ -121,11 +122,11 @@ func (a *usersHttpHandlerAdapter) AdminDeleteRole(ctx server.ReqCtx) {
 // @Success 200
 // @Failure 400 {string} string "Possible error codes: bad_request:invalid_request, bad_request:role_not_found, bad_request:invalid_role_name, bad_request:role_exist_name"
 // @Router /admin/users/roles/{id} [patch]
-func (a *usersHttpHandlerAdapter) AdminUpdateRole(ctx server.ReqCtx) {
+func (a *adapter) AdminUpdateRole(ctx server.ReqCtx) {
 	// Parse request json body
 	var request dto.AdminUpdateUserRoleRequest
 	if err := ctx.ReadJson(&request); err != nil {
-		ctx.WriteErrorResponse(httpHandlerAdapterPort.ErrUpdateUserRoleInvalidRequest)
+		ctx.WriteErrorResponse(errors.ErrBadRequest)
 		return
 	}
 
@@ -136,7 +137,7 @@ func (a *usersHttpHandlerAdapter) AdminUpdateRole(ctx server.ReqCtx) {
 	}
 
 	// Create data
-	data := servicePort.UpdateRoleData(request)
+	data := usersServicePort.UpdateRoleData(request)
 
 	// Update role
 	if err := a.usersService.UpdateRole(
@@ -161,11 +162,11 @@ func (a *usersHttpHandlerAdapter) AdminUpdateRole(ctx server.ReqCtx) {
 // @Success 201 {object} dto.AdminUserResponse
 // @Failure 400 {string} string "Possible error codes: bad_request:invalid_request, bad_request:invalid_username, bad_request:invalid_email, bad_request:invalid_password, bad_request:user_exist_email, bad_request:user_exist_username, bad_request:role_not_found"
 // @Router /admin/users [post]
-func (a *usersHttpHandlerAdapter) AdminCreateUser(ctx server.ReqCtx) {
+func (a *adapter) AdminCreateUser(ctx server.ReqCtx) {
 	// Parse request json body
 	var request dto.AdminCreateUserRequest
 	if err := ctx.ReadJson(&request); err != nil {
-		ctx.WriteErrorResponse(httpHandlerAdapterPort.ErrCreateUserInvalidRequest)
+		ctx.WriteErrorResponse(errors.ErrBadRequest)
 		return
 	}
 
@@ -176,7 +177,7 @@ func (a *usersHttpHandlerAdapter) AdminCreateUser(ctx server.ReqCtx) {
 	}
 
 	// Create data
-	data := servicePort.CreateUserData(request)
+	data := usersServicePort.CreateUserData(request)
 
 	// Create user
 	user, err := a.usersService.CreateUser(
@@ -208,7 +209,7 @@ func (a *usersHttpHandlerAdapter) AdminCreateUser(ctx server.ReqCtx) {
 // @Produce json
 // @Success 200 {array} []dto.AdminUserResponse
 // @Router /admin/users [get]
-func (a *usersHttpHandlerAdapter) AdminGetUsers(ctx server.ReqCtx) {
+func (a *adapter) AdminGetUsers(ctx server.ReqCtx) {
 	// Get users
 	users, err := a.usersService.GetUsers(ctx.Context())
 	if err != nil {
@@ -241,11 +242,11 @@ func (a *usersHttpHandlerAdapter) AdminGetUsers(ctx server.ReqCtx) {
 // @Success 200
 // @Failure 400 {string} string "Possible error codes: bad_request:invalid_request, bad_request:user_not_found, bad_request:user_is_used"
 // @Router /admin/users/{id} [delete]
-func (a *usersHttpHandlerAdapter) AdminDeleteUser(ctx server.ReqCtx) {
+func (a *adapter) AdminDeleteUser(ctx server.ReqCtx) {
 	// Convert user id string to uint64
 	id, err := strconv.ParseUint(ctx.UserValue("id").(string), 10, 64)
 	if err != nil {
-		ctx.WriteErrorResponse(httpHandlerAdapterPort.ErrDeleteUserInvalidRequest)
+		ctx.WriteErrorResponse(errors.ErrBadRequest)
 		return
 	}
 
@@ -268,7 +269,7 @@ func (a *usersHttpHandlerAdapter) AdminDeleteUser(ctx server.ReqCtx) {
 // @Produce json
 // @Success 200 {object} dto.AdminUserResponse
 // @Router /users/profile [get]
-func (a *usersHttpHandlerAdapter) GetProfile(ctx server.ReqCtx) {
+func (a *adapter) GetProfile(ctx server.ReqCtx) {
 	// Get profile
 	user, err := a.usersService.GetUser(
 		ctx.Context(),
@@ -303,11 +304,11 @@ func (a *usersHttpHandlerAdapter) GetProfile(ctx server.ReqCtx) {
 // @Success 200 {object} dto.UserAuth2faValidateResponse
 // @Failure 400 {string} string "Possible error codes: bad_request:invalid_request, bad_request:invalid_token, bad_request:mfa_disabled"
 // @Router /users/auth/2fa/validate [post]
-func (a *usersHttpHandlerAdapter) Auth2faValidate(ctx server.ReqCtx) {
+func (a *adapter) Auth2faValidate(ctx server.ReqCtx) {
 	// Parse request json body
 	var request dto.UserAuth2faValidateRequest
 	if err := ctx.ReadJson(&request); err != nil {
-		ctx.WriteErrorResponse(httpHandlerAdapterPort.ErrUserAuth2faValidateInvalidRequest)
+		ctx.WriteErrorResponse(errors.ErrBadRequest)
 		return
 	}
 
@@ -320,7 +321,7 @@ func (a *usersHttpHandlerAdapter) Auth2faValidate(ctx server.ReqCtx) {
 	// Auth 2FA validate
 	result, err := a.usersService.Auth2faValidate(
 		ctx.Context(),
-		&servicePort.UserAuth2faValidateData{
+		&usersServicePort.UserAuth2faValidateData{
 			User:  ctx.UserValue("user").(uint),
 			Token: request.Token,
 		},
@@ -344,11 +345,11 @@ func (a *usersHttpHandlerAdapter) Auth2faValidate(ctx server.ReqCtx) {
 // @Failure 400 {string} string "Possible error codes: bad_request:invalid_request, bad_request:invalid_password"
 // @Failure 401 {string} string "Possible error codes: unauthorized:invalid_credentials"
 // @Router /users/auth/2fa/settings [post]
-func (a *usersHttpHandlerAdapter) Auth2faSettings(ctx server.ReqCtx) {
+func (a *adapter) Auth2faSettings(ctx server.ReqCtx) {
 	// Parse request json body
 	var request dto.UserAuth2faSettingsRequest
 	if err := ctx.ReadJson(&request); err != nil {
-		ctx.WriteErrorResponse(httpHandlerAdapterPort.ErrUserAuth2faSettingsInvalidRequest)
+		ctx.WriteErrorResponse(errors.ErrBadRequest)
 		return
 	}
 
@@ -361,7 +362,7 @@ func (a *usersHttpHandlerAdapter) Auth2faSettings(ctx server.ReqCtx) {
 	// Auth 2FA settings
 	result, err := a.usersService.Auth2faSettings(
 		ctx.Context(),
-		&servicePort.UserAuth2faSettingsData{
+		&usersServicePort.UserAuth2faSettingsData{
 			User:     ctx.UserValue("user").(uint),
 			Password: request.Password,
 		},
@@ -384,11 +385,11 @@ func (a *usersHttpHandlerAdapter) Auth2faSettings(ctx server.ReqCtx) {
 // @Success 200
 // @Failure 400 {string} string "Possible error codes: bad_request:invalid_request, bad_request:invalid_token, bad_request:ot_enabled"
 // @Router /users/auth/2fa/enable [post]
-func (a *usersHttpHandlerAdapter) Auth2faEnable(ctx server.ReqCtx) {
+func (a *adapter) Auth2faEnable(ctx server.ReqCtx) {
 	// Parse request json body
 	var request dto.UserAuth2faEnableRequest
 	if err := ctx.ReadJson(&request); err != nil {
-		ctx.WriteErrorResponse(httpHandlerAdapterPort.ErrUserAuth2faEnableInvalidRequest)
+		ctx.WriteErrorResponse(errors.ErrBadRequest)
 		return
 	}
 
@@ -401,7 +402,7 @@ func (a *usersHttpHandlerAdapter) Auth2faEnable(ctx server.ReqCtx) {
 	// Auth 2FA enable
 	if err := a.usersService.Auth2faEnable(
 		ctx.Context(),
-		&servicePort.UserAuth2faEnableData{
+		&usersServicePort.UserAuth2faEnableData{
 			User:  ctx.UserValue("user").(uint),
 			Token: request.Token,
 		},
@@ -424,11 +425,11 @@ func (a *usersHttpHandlerAdapter) Auth2faEnable(ctx server.ReqCtx) {
 // @Failure 400 {string} string "Possible error codes: bad_request:invalid_request, bad_request:invalid_password, bad_request:invalid_token, bad_request:mfa_disabled"
 // @Failure 401 {string} string "Possible error codes: unauthorized:invalid_credentials"
 // @Router /users/auth/2fa/disable [post]
-func (a *usersHttpHandlerAdapter) Auth2faDisable(ctx server.ReqCtx) {
+func (a *adapter) Auth2faDisable(ctx server.ReqCtx) {
 	// Parse request json body
 	var request dto.UserAuth2faDisableRequest
 	if err := ctx.ReadJson(&request); err != nil {
-		ctx.WriteErrorResponse(httpHandlerAdapterPort.ErrUserAuth2faDisableInvalidRequest)
+		ctx.WriteErrorResponse(errors.ErrBadRequest)
 		return
 	}
 
@@ -441,7 +442,7 @@ func (a *usersHttpHandlerAdapter) Auth2faDisable(ctx server.ReqCtx) {
 	// Auth 2FA disable
 	if err := a.usersService.Auth2faDisable(
 		ctx.Context(),
-		&servicePort.UserAuth2faDisableData{
+		&usersServicePort.UserAuth2faDisableData{
 			User:     ctx.UserValue("user").(uint),
 			Password: request.Password,
 			Token:    request.Token,
@@ -464,11 +465,11 @@ func (a *usersHttpHandlerAdapter) Auth2faDisable(ctx server.ReqCtx) {
 // @Failure 400 {string} string "Possible error codes: bad_request:invalid_request, bad_request:invalid_login, bad_request:invalid_password"
 // @Failure 401 {string} string "Possible error codes: unauthorized:invalid_credentials"
 // @Router /users/auth [post]
-func (a *usersHttpHandlerAdapter) Auth(ctx server.ReqCtx) {
+func (a *adapter) Auth(ctx server.ReqCtx) {
 	// Parse request json body
 	var request dto.UserAuthRequest
 	if err := ctx.ReadJson(&request); err != nil {
-		ctx.WriteErrorResponse(httpHandlerAdapterPort.ErrUserAuthInvalidRequest)
+		ctx.WriteErrorResponse(errors.ErrBadRequest)
 		return
 	}
 
@@ -481,7 +482,7 @@ func (a *usersHttpHandlerAdapter) Auth(ctx server.ReqCtx) {
 	// Auth
 	result, err := a.usersService.Auth(
 		ctx.Context(),
-		&servicePort.UserAuthData{
+		&usersServicePort.UserAuthData{
 			Login:    request.Login,
 			Password: request.Password,
 		},
@@ -503,11 +504,11 @@ func (a *usersHttpHandlerAdapter) Auth(ctx server.ReqCtx) {
 // @Success 200 {object} dto.UserAuthResponse
 // @Failure 400 {string} string "Possible error codes: bad_request:invalid_request, bad_request:invalid_refresh_token, bad_request:invalid_token, bad_request:token_already_used"
 // @Router /users/auth/token/renew [post]
-func (a *usersHttpHandlerAdapter) AuthTokenRenew(ctx server.ReqCtx) {
+func (a *adapter) AuthTokenRenew(ctx server.ReqCtx) {
 	// Parse request json body
 	var request dto.UserTokenRenewRequest
 	if err := ctx.ReadJson(&request); err != nil {
-		ctx.WriteErrorResponse(httpHandlerAdapterPort.ErrUserTokenRenewInvalidRequest)
+		ctx.WriteErrorResponse(errors.ErrBadRequest)
 		return
 	}
 
@@ -518,7 +519,7 @@ func (a *usersHttpHandlerAdapter) AuthTokenRenew(ctx server.ReqCtx) {
 	}
 
 	// Create data
-	data := servicePort.UserAuthTokenRenewData(request)
+	data := usersServicePort.UserAuthTokenRenewData(request)
 
 	// Auth
 	result, err := a.usersService.AuthTokenRenew(
@@ -544,11 +545,11 @@ func (a *usersHttpHandlerAdapter) AuthTokenRenew(ctx server.ReqCtx) {
 // @Failure 400 {string} string "Possible error codes: bad_request:invalid_request, bad_request:invalid_access_token"
 // @Failure 401 {string} string "Possible error codes: unauthorized:invalid_token"
 // @Router /users/auth/token/validate [post]
-func (a *usersHttpHandlerAdapter) AuthTokenValidate(ctx server.ReqCtx) {
+func (a *adapter) AuthTokenValidate(ctx server.ReqCtx) {
 	// Parse request json body
 	var request dto.UserTokenValidateRequest
 	if err := ctx.ReadJson(&request); err != nil {
-		ctx.WriteErrorResponse(httpHandlerAdapterPort.ErrUserTokenValidateInvalidRequest)
+		ctx.WriteErrorResponse(errors.ErrBadRequest)
 		return
 	}
 
@@ -559,7 +560,7 @@ func (a *usersHttpHandlerAdapter) AuthTokenValidate(ctx server.ReqCtx) {
 	}
 
 	// Create data
-	data := servicePort.UserAuthTokenValidateData(request)
+	data := usersServicePort.UserAuthTokenValidateData(request)
 
 	// Validate access token
 	result, err := a.usersService.AuthTokenValidate(
@@ -577,20 +578,20 @@ func (a *usersHttpHandlerAdapter) AuthTokenValidate(ctx server.ReqCtx) {
 
 // Middlewares
 
-func (a *usersHttpHandlerAdapter) AuthMiddleware(mfa bool, roles ...string) func(server.ReqHandler) server.ReqHandler {
+func (a *adapter) AuthMiddleware(mfa bool, roles ...string) func(server.ReqHandler) server.ReqHandler {
 	return func(handler server.ReqHandler) server.ReqHandler {
 		return func(ctx server.ReqCtx) {
 			// Get auth token
 			token, err := ctx.GetBearerToken()
 			if err != nil {
-				ctx.WriteErrorResponse(httpHandlerAdapterPort.ErrUserAuthInvalidToken)
+				ctx.WriteErrorResponse(httpUsersHandlerAdapterPort.ErrAuthInvalidToken)
 				return
 			}
 
 			// Parse and validate access token
 			user, err := a.usersService.AuthTokenValidate(
 				ctx.Context(),
-				&servicePort.UserAuthTokenValidateData{
+				&usersServicePort.UserAuthTokenValidateData{
 					AccessToken: token,
 				},
 			)
@@ -606,13 +607,13 @@ func (a *usersHttpHandlerAdapter) AuthMiddleware(mfa bool, roles ...string) func
 
 			// Check MFA
 			if mfa && user.Mfa {
-				ctx.WriteErrorResponse(httpHandlerAdapterPort.ErrUserAuth2faRequired)
+				ctx.WriteErrorResponse(httpUsersHandlerAdapterPort.ErrAuth2faRequired)
 				return
 			}
 
 			// Check role permissions
 			if len(roles) > 0 && !slices.Contains(roles, user.Role) {
-				ctx.WriteErrorResponse(httpHandlerAdapterPort.ErrUserAuthInsufficientPermissions)
+				ctx.WriteErrorResponse(httpUsersHandlerAdapterPort.ErrAuthInsufficientPermissions)
 				return
 			}
 

@@ -1,6 +1,6 @@
 package main
 
-// @title		Users
+// @title		users-service
 // @version		1.0
 // @BasePath	/
 
@@ -14,20 +14,29 @@ import (
 	"strconv"
 	"time"
 
+	// Framework
 	"github.com/flash-go/flash/http"
 	"github.com/flash-go/flash/http/server"
+
+	// SDK
 	"github.com/flash-go/sdk/config"
 	"github.com/flash-go/sdk/errors"
 	"github.com/flash-go/sdk/infra"
 	"github.com/flash-go/sdk/logger"
 	"github.com/flash-go/sdk/state"
 	"github.com/flash-go/sdk/telemetry"
+
+	// Implementations
+	httpUsersHandlerAdapterImpl "github.com/flash-go/users-service/internal/adapter/handler/users/http"
+	jwtRepositoryAdapterImpl "github.com/flash-go/users-service/internal/adapter/repository/jwt"
+	usersRepositoryAdapterImpl "github.com/flash-go/users-service/internal/adapter/repository/users"
+	jwtServiceImpl "github.com/flash-go/users-service/internal/service/jwt"
+	otpServiceImpl "github.com/flash-go/users-service/internal/service/otp"
+	usersServiceImpl "github.com/flash-go/users-service/internal/service/users"
+
+	// Other
 	_ "github.com/flash-go/users-service/docs"
-	httpHandlerAdapter "github.com/flash-go/users-service/internal/adapter/handler/http"
-	jwtRepositoryAdapter "github.com/flash-go/users-service/internal/adapter/repository/jwt"
-	usersRepositoryAdapter "github.com/flash-go/users-service/internal/adapter/repository/users"
 	internalConfig "github.com/flash-go/users-service/internal/config"
-	service "github.com/flash-go/users-service/internal/service"
 	_ "github.com/joho/godotenv/autoload"
 )
 
@@ -104,17 +113,25 @@ func main() {
 	)
 
 	// Create repository
-	jwtRepository := jwtRepositoryAdapter.NewJwtRepositoryAdapter(redisClient)
-	usersRepository := usersRepositoryAdapter.NewUsersRepositoryAdapter(postgresClient)
+	jwtRepository := jwtRepositoryAdapterImpl.New(
+		&jwtRepositoryAdapterImpl.Config{
+			RedisClient: redisClient,
+		},
+	)
+	usersRepository := usersRepositoryAdapterImpl.New(
+		&usersRepositoryAdapterImpl.Config{
+			PostgresClient: postgresClient,
+		},
+	)
 
 	// Create services
-	otpService := service.NewOtpService(
-		&service.OtpServiceConfig{
+	otpService := otpServiceImpl.New(
+		&otpServiceImpl.Config{
 			OtpIssuer: cfg.Get(internalConfig.OtpIssuerOptKey),
 		},
 	)
-	jwtService := service.NewJwtService(
-		&service.JwtServiceConfig{
+	jwtService := jwtServiceImpl.New(
+		&jwtServiceImpl.Config{
 			JwtRepository:    jwtRepository,
 			JwtAccessExpire:  cfg.Get(internalConfig.JwtAccessTtlOptKey),
 			JwtRefreshExpire: cfg.Get(internalConfig.JwtRefreshTtlOptKey),
@@ -123,8 +140,8 @@ func main() {
 			JwtIssuer:        cfg.Get(internalConfig.JwtIssuerOptKey),
 		},
 	)
-	usersService := service.NewUsersService(
-		&service.UsersServiceConfig{
+	usersService := usersServiceImpl.New(
+		&usersServiceImpl.Config{
 			UsersRepository: usersRepository,
 			OtpService:      otpService,
 			JwtService:      jwtService,
@@ -132,8 +149,8 @@ func main() {
 	)
 
 	// Create handlers
-	usersHandler := httpHandlerAdapter.NewUsersHttpHandlerAdapter(
-		&httpHandlerAdapter.UsersHttpHandlerAdapterConfig{
+	usersHandler := httpUsersHandlerAdapterImpl.New(
+		&httpUsersHandlerAdapterImpl.Config{
 			UsersService: usersService,
 		},
 	)

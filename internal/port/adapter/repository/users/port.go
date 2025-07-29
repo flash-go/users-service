@@ -3,11 +3,10 @@ package port
 import (
 	"context"
 
-	"github.com/flash-go/sdk/errors"
 	"github.com/flash-go/users-service/internal/domain/entity"
 )
 
-type UsersRepositoryAdapterPort interface {
+type Interface interface {
 	// Roles
 	CreateRole(ctx context.Context, role *entity.Role) error
 	DeleteRoleById(ctx context.Context, id string) error
@@ -49,10 +48,3 @@ const (
 )
 
 type UserFieldData map[UserField]any
-
-var (
-	ErrUserRoleNotFound     = errors.New(errors.ErrBadRequest, "role_not_found")
-	ErrUserNotFound         = errors.New(errors.ErrBadRequest, "user_not_found")
-	ErrDeleteUserRoleIsUsed = errors.New(errors.ErrBadRequest, "role_is_used")
-	ErrDeleteUserIsUsed     = errors.New(errors.ErrBadRequest, "user_is_used")
-)

@@ -6,13 +6,11 @@ import (
 	"strconv"
 	"time"
 
-	repositoryAdapterPort "github.com/flash-go/users-service/internal/port/adapter/repository"
-	servicePort "github.com/flash-go/users-service/internal/port/service"
+	jwtRepositoryAdapterPort "github.com/flash-go/users-service/internal/port/adapter/repository/jwt"
+	jwtServicePort "github.com/flash-go/users-service/internal/port/service/jwt"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )
-
-var jwtServiceSigningMethod = jwt.SigningMethodHS512
 
 type jwtTokenClaims struct {
 	Role string `json:"role"`
@@ -20,8 +18,8 @@ type jwtTokenClaims struct {
 	jwt.RegisteredClaims
 }
 
-type JwtServiceConfig struct {
-	JwtRepository    repositoryAdapterPort.JwtRepositoryAdapterPort
+type Config struct {
+	JwtRepository    jwtRepositoryAdapterPort.Interface
 	JwtAccessExpire  string
 	JwtRefreshExpire string
 	JwtAccessKey     string
@@ -29,8 +27,8 @@ type JwtServiceConfig struct {
 	JwtIssuer        string
 }
 
-func NewJwtService(config *JwtServiceConfig) servicePort.JwtServicePort {
-	return &jwtService{
+func New(config *Config) jwtServicePort.Interface {
+	return &service{
 		config.JwtRepository,
 		config.JwtAccessExpire,
 		config.JwtRefreshExpire,
@@ -40,8 +38,8 @@ func NewJwtService(config *JwtServiceConfig) servicePort.JwtServicePort {
 	}
 }
 
-type jwtService struct {
-	jwtRepository    repositoryAdapterPort.JwtRepositoryAdapterPort
+type service struct {
+	jwtRepository    jwtRepositoryAdapterPort.Interface
 	jwtAccessExpire  string
 	jwtRefreshExpire string
 	jwtAccessKey     string
@@ -49,7 +47,7 @@ type jwtService struct {
 	jwtIssuer        string
 }
 
-func (s *jwtService) NewTokens(ctx context.Context, data servicePort.NewJwtTokenData) (*servicePort.JwtTokensResult, error) {
+func (s *service) NewTokens(ctx context.Context, data jwtServicePort.NewJwtTokenData) (*jwtServicePort.JwtTokensResult, error) {
 	// Generate JWT Access token
 	access, err := s.NewAccessToken(ctx, data)
 	if err != nil {
@@ -62,18 +60,18 @@ func (s *jwtService) NewTokens(ctx context.Context, data servicePort.NewJwtToken
 		return nil, err
 	}
 
-	return &servicePort.JwtTokensResult{
+	return &jwtServicePort.JwtTokensResult{
 		Access:  *access,
 		Refresh: *refresh,
 	}, nil
 }
 
-func (s *jwtService) NewAccessToken(ctx context.Context, data servicePort.NewJwtTokenData) (*string, error) {
+func (s *service) NewAccessToken(ctx context.Context, data jwtServicePort.NewJwtTokenData) (*string, error) {
 	token, _, err := s.newToken(data, s.jwtAccessKey, s.jwtAccessExpire)
 	return token, err
 }
 
-func (s *jwtService) NewRefreshToken(ctx context.Context, data servicePort.NewJwtTokenData) (*string, error) {
+func (s *service) NewRefreshToken(ctx context.Context, data jwtServicePort.NewJwtTokenData) (*string, error) {
 	// Create token
 	token, claims, err := s.newToken(data, s.jwtRefreshKey, s.jwtRefreshExpire)
 	if err != nil {
@@ -94,31 +92,31 @@ func (s *jwtService) NewRefreshToken(ctx context.Context, data servicePort.NewJw
 	return token, err
 }
 
-func (s *jwtService) GetAccessTokenDuration() (time.Duration, error) {
+func (s *service) GetAccessTokenDuration() (time.Duration, error) {
 	return time.ParseDuration(s.jwtAccessExpire)
 }
 
-func (s *jwtService) GetRefreshTokenDuration() (time.Duration, error) {
+func (s *service) GetRefreshTokenDuration() (time.Duration, error) {
 	return time.ParseDuration(s.jwtRefreshExpire)
 }
 
-func (s *jwtService) ParseAccessToken(token string) (*servicePort.ParseJwtTokenResult, error) {
+func (s *service) ParseAccessToken(token string) (*jwtServicePort.ParseJwtTokenResult, error) {
 	return s.parseToken(token, s.jwtAccessKey)
 }
 
-func (s *jwtService) ParseRefreshToken(token string) (*servicePort.ParseJwtTokenResult, error) {
+func (s *service) ParseRefreshToken(token string) (*jwtServicePort.ParseJwtTokenResult, error) {
 	return s.parseToken(token, s.jwtRefreshKey)
 }
 
-func (s *jwtService) SetRefreshTokenJtiToCache(ctx context.Context, user uint, jti string, ttl time.Duration) error {
+func (s *service) SetRefreshTokenJtiToCache(ctx context.Context, user uint, jti string, ttl time.Duration) error {
 	return s.jwtRepository.SetRefreshTokenJtiToCache(ctx, user, jti, ttl)
 }
 
-func (s *jwtService) GetRefreshTokenJtiFromCache(ctx context.Context, user uint) (*string, error) {
+func (s *service) GetRefreshTokenJtiFromCache(ctx context.Context, user uint) (*string, error) {
 	return s.jwtRepository.GetRefreshTokenJtiFromCache(ctx, user)
 }
 
-func (s *jwtService) newToken(data servicePort.NewJwtTokenData, key, expire string) (*string, *jwtTokenClaims, error) {
+func (s *service) newToken(data jwtServicePort.NewJwtTokenData, key, expire string) (*string, *jwtTokenClaims, error) {
 	// Checking the minimum key length
 	if err := s.checkKeyLen(key); err != nil {
 		return nil, nil, err
@@ -144,12 +142,12 @@ func (s *jwtService) newToken(data servicePort.NewJwtTokenData, key, expire stri
 			ExpiresAt: jwt.NewNumericDate(exp),
 			IssuedAt:  jwt.NewNumericDate(now),
 			Issuer:    s.jwtIssuer,
-			Audience:  []string{servicePort.JwtServiceTokenAudience},
+			Audience:  []string{jwtServicePort.TokenAudience},
 		},
 	}
 
 	// Create token
-	token := jwt.NewWithClaims(jwtServiceSigningMethod, claims)
+	token := jwt.NewWithClaims(signingMethod, claims)
 
 	// Create signed token string
 	tokenString, err := token.SignedString([]byte(key))
@@ -160,7 +158,7 @@ func (s *jwtService) newToken(data servicePort.NewJwtTokenData, key, expire stri
 	return &tokenString, claims, nil
 }
 
-func (s *jwtService) parseToken(token string, key string) (*servicePort.ParseJwtTokenResult, error) {
+func (s *service) parseToken(token string, key string) (*jwtServicePort.ParseJwtTokenResult, error) {
 	// Checking the minimum key length
 	if err := s.checkKeyLen(key); err != nil {
 		return nil, err
@@ -171,13 +169,13 @@ func (s *jwtService) parseToken(token string, key string) (*servicePort.ParseJwt
 		// Manual security control that disallows the use of any algorithms other than HMAC.
 		// You explicitly state that only HMAC (e.g., HS256, HS512) is accepted and everything
 		// else is rejected. This check explicitly forbids any unsupported algorithms.
-		jwt.WithValidMethods([]string{jwtServiceSigningMethod.Alg()}),
+		jwt.WithValidMethods([]string{signingMethod.Alg()}),
 		// In many distributed systems, clocks may differ slightly between services (for example,
 		// the client and server might have a small time difference). To avoid issues caused by
 		// this, we add a leeway (a time buffer).
 		jwt.WithLeeway(5*time.Second),
 		jwt.WithIssuer(s.jwtIssuer),
-		jwt.WithAudience(servicePort.JwtServiceTokenAudience),
+		jwt.WithAudience(jwtServicePort.TokenAudience),
 		jwt.WithIssuedAt(),
 		jwt.WithExpirationRequired(),
 	)
@@ -190,7 +188,7 @@ func (s *jwtService) parseToken(token string, key string) (*servicePort.ParseJwt
 		return []byte(key), nil
 	})
 	if err != nil || !t.Valid {
-		return nil, servicePort.ErrJwtInvalidToken
+		return nil, jwtServicePort.ErrInvalidToken
 	}
 
 	// Parsing the Subject into a uint
@@ -199,7 +197,7 @@ func (s *jwtService) parseToken(token string, key string) (*servicePort.ParseJwt
 		return nil, fmt.Errorf("parsing the subject into a uint failed: %v", err)
 	}
 
-	return &servicePort.ParseJwtTokenResult{
+	return &jwtServicePort.ParseJwtTokenResult{
 		Id:       claims.ID,
 		User:     uint(user),
 		Role:     claims.Role,
@@ -211,9 +209,9 @@ func (s *jwtService) parseToken(token string, key string) (*servicePort.ParseJwt
 	}, nil
 }
 
-func (s *jwtService) checkKeyLen(key string) error {
-	if len(key) < servicePort.JwtServiceTokenKeyMinLen {
-		return fmt.Errorf("signing key too short; must be at least %d characters", servicePort.JwtServiceTokenKeyMinLen)
+func (s *service) checkKeyLen(key string) error {
+	if len(key) < jwtServicePort.TokenKeyMinLen {
+		return fmt.Errorf("signing key too short; must be at least %d characters", jwtServicePort.TokenKeyMinLen)
 	}
 	return nil
 }

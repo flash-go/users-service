@@ -6,24 +6,30 @@ import (
 	"fmt"
 	"net/mail"
 
-	model "github.com/flash-go/users-service/internal/adapter/repository/users/models"
+	"github.com/flash-go/users-service/internal/adapter/repository/users/model"
 	"github.com/flash-go/users-service/internal/domain/entity"
-	port "github.com/flash-go/users-service/internal/port/adapter/repository"
+	usersRepositoryAdapterPort "github.com/flash-go/users-service/internal/port/adapter/repository/users"
 	"github.com/jackc/pgx/v5/pgconn"
 	"gorm.io/gorm"
 )
 
-func NewUsersRepositoryAdapter(postgres *gorm.DB) port.UsersRepositoryAdapterPort {
-	return &usersRepositoryAdapter{postgres}
+type Config struct {
+	PostgresClient *gorm.DB
 }
 
-type usersRepositoryAdapter struct {
+func New(config *Config) usersRepositoryAdapterPort.Interface {
+	return &adapter{
+		postgres: config.PostgresClient,
+	}
+}
+
+type adapter struct {
 	postgres *gorm.DB
 }
 
 // Roles
 
-func (a *usersRepositoryAdapter) CreateRole(ctx context.Context, role *entity.Role) error {
+func (a *adapter) CreateRole(ctx context.Context, role *entity.Role) error {
 	// Mapping entity to model
 	obj := model.UserRole(*role)
 
@@ -38,7 +44,7 @@ func (a *usersRepositoryAdapter) CreateRole(ctx context.Context, role *entity.Ro
 	return nil
 }
 
-func (a *usersRepositoryAdapter) DeleteRoleById(ctx context.Context, id string) error {
+func (a *adapter) DeleteRoleById(ctx context.Context, id string) error {
 	// Delete role from database
 	result := a.postgres.WithContext(ctx).Delete(&model.UserRole{}, "id = ?", id)
 
@@ -47,7 +53,7 @@ func (a *usersRepositoryAdapter) DeleteRoleById(ctx context.Context, id string) 
 		if pgErr, ok := result.Error.(*pgconn.PgError); ok {
 			switch pgErr.Code {
 			case "23503":
-				return port.ErrDeleteUserRoleIsUsed
+				return usersRepositoryAdapterPort.ErrDeleteUserRoleIsUsed
 			}
 		}
 		return result.Error
@@ -55,13 +61,13 @@ func (a *usersRepositoryAdapter) DeleteRoleById(ctx context.Context, id string) 
 
 	// If role not found
 	if result.RowsAffected == 0 {
-		return port.ErrUserRoleNotFound
+		return usersRepositoryAdapterPort.ErrUserRoleNotFound
 	}
 
 	return nil
 }
 
-func (a *usersRepositoryAdapter) UpdateRole(ctx context.Context, role *entity.Role) error {
+func (a *adapter) UpdateRole(ctx context.Context, role *entity.Role) error {
 	// Mapping entity to model
 	obj := model.UserRole(*role)
 
@@ -75,13 +81,13 @@ func (a *usersRepositoryAdapter) UpdateRole(ctx context.Context, role *entity.Ro
 
 	// If role not found
 	if result.RowsAffected == 0 {
-		return port.ErrUserRoleNotFound
+		return usersRepositoryAdapterPort.ErrUserRoleNotFound
 	}
 
 	return nil
 }
 
-func (a *usersRepositoryAdapter) UpdateRoleFieldsById(ctx context.Context, id string, fields *port.RoleFieldData) error {
+func (a *adapter) UpdateRoleFieldsById(ctx context.Context, id string, fields *usersRepositoryAdapterPort.RoleFieldData) error {
 	// Update role in database
 	result := a.postgres.WithContext(ctx).Model(&model.UserRole{}).Where("id = ?", id).Updates(mapUpdatedFields(fields))
 
@@ -92,13 +98,13 @@ func (a *usersRepositoryAdapter) UpdateRoleFieldsById(ctx context.Context, id st
 
 	// If role not found
 	if result.RowsAffected == 0 {
-		return port.ErrUserRoleNotFound
+		return usersRepositoryAdapterPort.ErrUserRoleNotFound
 	}
 
 	return nil
 }
 
-func (a *usersRepositoryAdapter) GetRoles(ctx context.Context) (*[]entity.Role, error) {
+func (a *adapter) GetRoles(ctx context.Context) (*[]entity.Role, error) {
 	// Get roles from database
 	obj := []model.UserRole{}
 	if err := a.postgres.WithContext(ctx).Find(&obj).Error; err != nil {
@@ -114,14 +120,14 @@ func (a *usersRepositoryAdapter) GetRoles(ctx context.Context) (*[]entity.Role, 
 	return &roles, nil
 }
 
-func (a *usersRepositoryAdapter) GetRoleBy(ctx context.Context, field port.RoleField, value any) (*entity.Role, error) {
+func (a *adapter) GetRoleBy(ctx context.Context, field usersRepositoryAdapterPort.RoleField, value any) (*entity.Role, error) {
 	// Get role from database
 	obj := model.UserRole{}
 	err := a.postgres.WithContext(ctx).Where(fmt.Sprintf("%s = ?", string(field)), value).First(&obj).Error
 
 	// Check error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, port.ErrUserRoleNotFound
+		return nil, usersRepositoryAdapterPort.ErrUserRoleNotFound
 	}
 	if err != nil {
 		return nil, err
@@ -133,7 +139,7 @@ func (a *usersRepositoryAdapter) GetRoleBy(ctx context.Context, field port.RoleF
 	return &role, nil
 }
 
-func (a *usersRepositoryAdapter) ExistRoleBy(ctx context.Context, field port.RoleField, value any) (bool, error) {
+func (a *adapter) ExistRoleBy(ctx context.Context, field usersRepositoryAdapterPort.RoleField, value any) (bool, error) {
 	var count int64
 
 	err := a.postgres.
@@ -151,7 +157,7 @@ func (a *usersRepositoryAdapter) ExistRoleBy(ctx context.Context, field port.Rol
 
 // Users
 
-func (a *usersRepositoryAdapter) CreateUser(ctx context.Context, user *entity.User) error {
+func (a *adapter) CreateUser(ctx context.Context, user *entity.User) error {
 	// Mapping entity to model
 	obj := modelUserFromEntity(user)
 
@@ -171,7 +177,7 @@ func (a *usersRepositoryAdapter) CreateUser(ctx context.Context, user *entity.Us
 	return nil
 }
 
-func (a *usersRepositoryAdapter) DeleteUserById(ctx context.Context, id uint) error {
+func (a *adapter) DeleteUserById(ctx context.Context, id uint) error {
 	// Delete user from database
 	result := a.postgres.WithContext(ctx).Delete(&model.User{}, "id = ?", id)
 
@@ -180,7 +186,7 @@ func (a *usersRepositoryAdapter) DeleteUserById(ctx context.Context, id uint) er
 		if pgErr, ok := result.Error.(*pgconn.PgError); ok {
 			switch pgErr.Code {
 			case "23503":
-				return port.ErrDeleteUserIsUsed
+				return usersRepositoryAdapterPort.ErrDeleteUserIsUsed
 			}
 		}
 		return result.Error
@@ -188,13 +194,13 @@ func (a *usersRepositoryAdapter) DeleteUserById(ctx context.Context, id uint) er
 
 	// If user not found
 	if result.RowsAffected == 0 {
-		return port.ErrUserNotFound
+		return usersRepositoryAdapterPort.ErrUserNotFound
 	}
 
 	return nil
 }
 
-func (a *usersRepositoryAdapter) UpdateUser(ctx context.Context, user *entity.User) error {
+func (a *adapter) UpdateUser(ctx context.Context, user *entity.User) error {
 	// Mapping entity to model
 	obj := modelUserFromEntity(user)
 
@@ -208,13 +214,13 @@ func (a *usersRepositoryAdapter) UpdateUser(ctx context.Context, user *entity.Us
 
 	// If user not found
 	if result.RowsAffected == 0 {
-		return port.ErrUserNotFound
+		return usersRepositoryAdapterPort.ErrUserNotFound
 	}
 
 	return nil
 }
 
-func (a *usersRepositoryAdapter) UpdateUserFieldsById(ctx context.Context, id uint, fields *port.UserFieldData) error {
+func (a *adapter) UpdateUserFieldsById(ctx context.Context, id uint, fields *usersRepositoryAdapterPort.UserFieldData) error {
 	// Update user in database
 	result := a.postgres.WithContext(ctx).Model(&model.User{}).Where("id = ?", id).Updates(mapUpdatedFields(fields))
 
@@ -225,13 +231,13 @@ func (a *usersRepositoryAdapter) UpdateUserFieldsById(ctx context.Context, id ui
 
 	// If user not found
 	if result.RowsAffected == 0 {
-		return port.ErrUserNotFound
+		return usersRepositoryAdapterPort.ErrUserNotFound
 	}
 
 	return nil
 }
 
-func (a *usersRepositoryAdapter) GetUsers(ctx context.Context) (*[]entity.User, error) {
+func (a *adapter) GetUsers(ctx context.Context) (*[]entity.User, error) {
 	// Get users from database
 	obj := []model.User{}
 	if err := a.postgres.WithContext(ctx).Preload("Role").Find(&obj).Error; err != nil {
@@ -247,21 +253,21 @@ func (a *usersRepositoryAdapter) GetUsers(ctx context.Context) (*[]entity.User, 
 	return &users, nil
 }
 
-func (a *usersRepositoryAdapter) GetUserByLogin(ctx context.Context, login string) (*entity.User, error) {
+func (a *adapter) GetUserByLogin(ctx context.Context, login string) (*entity.User, error) {
 	if _, err := mail.ParseAddress(login); err == nil {
 		return a.GetUserBy(ctx, "email", login)
 	}
 	return a.GetUserBy(ctx, "username", login)
 }
 
-func (a *usersRepositoryAdapter) GetUserBy(ctx context.Context, field port.UserField, value any) (*entity.User, error) {
+func (a *adapter) GetUserBy(ctx context.Context, field usersRepositoryAdapterPort.UserField, value any) (*entity.User, error) {
 	// Get user from database
 	obj := &model.User{}
 	err := a.postgres.WithContext(ctx).Preload("Role").Where(fmt.Sprintf("%s = ?", string(field)), value).First(obj).Error
 
 	// Check error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, port.ErrUserNotFound
+		return nil, usersRepositoryAdapterPort.ErrUserNotFound
 	}
 	if err != nil {
 		return nil, err
@@ -271,7 +277,7 @@ func (a *usersRepositoryAdapter) GetUserBy(ctx context.Context, field port.UserF
 	return entityUserFromModel(obj), nil
 }
 
-func (a *usersRepositoryAdapter) ExistUserBy(ctx context.Context, field port.UserField, value any) (bool, error) {
+func (a *adapter) ExistUserBy(ctx context.Context, field usersRepositoryAdapterPort.UserField, value any) (bool, error) {
 	var count int64
 	err := a.postgres.
 		WithContext(ctx).
