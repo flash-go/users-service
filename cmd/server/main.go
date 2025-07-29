@@ -12,7 +12,6 @@ import (
 	"log"
 	"os"
 	"strconv"
-	"time"
 
 	// Framework
 	"github.com/flash-go/flash/http"
@@ -39,8 +38,6 @@ import (
 	internalConfig "github.com/flash-go/users-service/internal/config"
 	_ "github.com/joho/godotenv/autoload"
 )
-
-const collectGoRuntimeMetricsTimeout = 10 * time.Second
 
 func main() {
 	// Create state service

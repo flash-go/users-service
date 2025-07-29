@@ -80,7 +80,7 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Possible error codes: bad_request:invalid_request, bad_request:invalid_username, bad_request:invalid_email, bad_request:invalid_password, bad_request:user_exist_email, bad_request:user_exist_username, bad_request:role_not_found",
+                        "description": "Possible error codes: bad_request, bad_request:invalid_username, bad_request:invalid_email, bad_request:invalid_password, bad_request:user_exist_email, bad_request:user_exist_username, bad_request:role_not_found",
                         "schema": {
                             "type": "string"
                         }
@@ -153,7 +153,7 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Possible error codes: bad_request:invalid_request, bad_request:invalid_role_id, bad_request:invalid_role_name, bad_request:role_exist_id, bad_request:role_exist_name",
+                        "description": "Possible error codes: bad_request, bad_request:invalid_role_id, bad_request:invalid_role_name, bad_request:role_exist_id, bad_request:role_exist_name",
                         "schema": {
                             "type": "string"
                         }
@@ -235,7 +235,7 @@ const docTemplate = `{
                         "description": "OK"
                     },
                     "400": {
-                        "description": "Possible error codes: bad_request:invalid_request, bad_request:role_not_found, bad_request:invalid_role_name, bad_request:role_exist_name",
+                        "description": "Possible error codes: bad_request, bad_request:role_not_found, bad_request:invalid_role_name, bad_request:role_exist_name",
                         "schema": {
                             "type": "string"
                         }
@@ -271,7 +271,7 @@ const docTemplate = `{
                         "description": "OK"
                     },
                     "400": {
-                        "description": "Possible error codes: bad_request:invalid_request, bad_request:user_not_found, bad_request:user_is_used",
+                        "description": "Possible error codes: bad_request, bad_request:user_not_found, bad_request:user_is_used",
                         "schema": {
                             "type": "string"
                         }
@@ -311,7 +311,7 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Possible error codes: bad_request:invalid_request, bad_request:invalid_login, bad_request:invalid_password",
+                        "description": "Possible error codes: bad_request, bad_request:invalid_login, bad_request:invalid_password",
                         "schema": {
                             "type": "string"
                         }
@@ -358,7 +358,7 @@ const docTemplate = `{
                         "description": "OK"
                     },
                     "400": {
-                        "description": "Possible error codes: bad_request:invalid_request, bad_request:invalid_password, bad_request:invalid_token, bad_request:mfa_disabled",
+                        "description": "Possible error codes: bad_request, bad_request:invalid_password, bad_request:invalid_token, bad_request:mfa_disabled",
                         "schema": {
                             "type": "string"
                         }
@@ -405,7 +405,7 @@ const docTemplate = `{
                         "description": "OK"
                     },
                     "400": {
-                        "description": "Possible error codes: bad_request:invalid_request, bad_request:invalid_token, bad_request:ot_enabled",
+                        "description": "Possible error codes: bad_request, bad_request:invalid_token, bad_request:mfa_enabled",
                         "schema": {
                             "type": "string"
                         }
@@ -450,7 +450,7 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Possible error codes: bad_request:invalid_request, bad_request:invalid_password",
+                        "description": "Possible error codes: bad_request, bad_request:invalid_password",
                         "schema": {
                             "type": "string"
                         }
@@ -502,7 +502,7 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Possible error codes: bad_request:invalid_request, bad_request:invalid_token, bad_request:mfa_disabled",
+                        "description": "Possible error codes: bad_request, bad_request:invalid_token, bad_request:mfa_disabled",
                         "schema": {
                             "type": "string"
                         }
@@ -542,7 +542,7 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Possible error codes: bad_request:invalid_request, bad_request:invalid_refresh_token, bad_request:invalid_token, bad_request:token_already_used",
+                        "description": "Possible error codes: bad_request, bad_request:invalid_refresh_token, bad_request:invalid_token, bad_request:token_already_used",
                         "schema": {
                             "type": "string"
                         }
@@ -583,7 +583,7 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Possible error codes: bad_request:invalid_request, bad_request:invalid_access_token",
+                        "description": "Possible error codes: bad_request, bad_request:invalid_access_token",
                         "schema": {
                             "type": "string"
                         }
@@ -842,7 +842,7 @@ var SwaggerInfo = &swag.Spec{
 	Host:             "",
 	BasePath:         "/",
 	Schemes:          []string{},
-	Title:            "Users",
+	Title:            "users-service",
 	Description:      "",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,

@@ -169,7 +169,7 @@ type UserTokenRenewRequest struct {
 
 func (r *UserTokenRenewRequest) Validate() error {
 	if r.RefreshToken == "" {
-		return ErrUserAuthInvalidRefreshToken
+		return ErrUserAuthInvalidToken
 	}
 	return nil
 }
@@ -180,7 +180,7 @@ type UserTokenValidateRequest struct {
 
 func (r *UserTokenValidateRequest) Validate() error {
 	if r.AccessToken == "" {
-		return ErrUserAuthInvalidAccessToken
+		return ErrUserAuthInvalidToken
 	}
 	return nil
 }

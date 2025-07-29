@@ -4,12 +4,11 @@ import (
 	"slices"
 	"strconv"
 
+	"github.com/flash-go/flash/http/server"
 	"github.com/flash-go/sdk/errors"
 	dto "github.com/flash-go/users-service/internal/dto/users"
 	httpUsersHandlerAdapterPort "github.com/flash-go/users-service/internal/port/adapter/handler/users/http"
 	usersServicePort "github.com/flash-go/users-service/internal/port/service/users"
-
-	"github.com/flash-go/flash/http/server"
 )
 
 type Config struct {
@@ -33,7 +32,7 @@ type adapter struct {
 // @Produce json,plain
 // @Param request body dto.AdminCreateUserRoleRequest true "Create user role (admin)"
 // @Success 201 {object} dto.AdminUserRoleResponse
-// @Failure 400 {string} string "Possible error codes: bad_request:invalid_request, bad_request:invalid_role_id, bad_request:invalid_role_name, bad_request:role_exist_id, bad_request:role_exist_name"
+// @Failure 400 {string} string "Possible error codes: bad_request, bad_request:invalid_role_id, bad_request:invalid_role_name, bad_request:role_exist_id, bad_request:role_exist_name"
 // @Router /admin/users/roles [post]
 func (a *adapter) AdminCreateRole(ctx server.ReqCtx) {
 	// Parse request json body
@@ -120,7 +119,7 @@ func (a *adapter) AdminDeleteRole(ctx server.ReqCtx) {
 // @Param id path string true "Role ID"
 // @Param request body dto.AdminUpdateUserRoleRequest true "Update user role (admin)"
 // @Success 200
-// @Failure 400 {string} string "Possible error codes: bad_request:invalid_request, bad_request:role_not_found, bad_request:invalid_role_name, bad_request:role_exist_name"
+// @Failure 400 {string} string "Possible error codes: bad_request, bad_request:role_not_found, bad_request:invalid_role_name, bad_request:role_exist_name"
 // @Router /admin/users/roles/{id} [patch]
 func (a *adapter) AdminUpdateRole(ctx server.ReqCtx) {
 	// Parse request json body
@@ -160,7 +159,7 @@ func (a *adapter) AdminUpdateRole(ctx server.ReqCtx) {
 // @Produce json,plain
 // @Param request body dto.AdminCreateUserRequest true "Create user (admin)"
 // @Success 201 {object} dto.AdminUserResponse
-// @Failure 400 {string} string "Possible error codes: bad_request:invalid_request, bad_request:invalid_username, bad_request:invalid_email, bad_request:invalid_password, bad_request:user_exist_email, bad_request:user_exist_username, bad_request:role_not_found"
+// @Failure 400 {string} string "Possible error codes: bad_request, bad_request:invalid_username, bad_request:invalid_email, bad_request:invalid_password, bad_request:user_exist_email, bad_request:user_exist_username, bad_request:role_not_found"
 // @Router /admin/users [post]
 func (a *adapter) AdminCreateUser(ctx server.ReqCtx) {
 	// Parse request json body
@@ -240,7 +239,7 @@ func (a *adapter) AdminGetUsers(ctx server.ReqCtx) {
 // @Produce plain
 // @Param id path string true "User ID"
 // @Success 200
-// @Failure 400 {string} string "Possible error codes: bad_request:invalid_request, bad_request:user_not_found, bad_request:user_is_used"
+// @Failure 400 {string} string "Possible error codes: bad_request, bad_request:user_not_found, bad_request:user_is_used"
 // @Router /admin/users/{id} [delete]
 func (a *adapter) AdminDeleteUser(ctx server.ReqCtx) {
 	// Convert user id string to uint64
@@ -302,7 +301,7 @@ func (a *adapter) GetProfile(ctx server.ReqCtx) {
 // @Produce json,plain
 // @Param request body dto.UserAuth2faValidateRequest true "User auth 2FA validate"
 // @Success 200 {object} dto.UserAuth2faValidateResponse
-// @Failure 400 {string} string "Possible error codes: bad_request:invalid_request, bad_request:invalid_token, bad_request:mfa_disabled"
+// @Failure 400 {string} string "Possible error codes: bad_request, bad_request:invalid_token, bad_request:mfa_disabled"
 // @Router /users/auth/2fa/validate [post]
 func (a *adapter) Auth2faValidate(ctx server.ReqCtx) {
 	// Parse request json body
@@ -342,7 +341,7 @@ func (a *adapter) Auth2faValidate(ctx server.ReqCtx) {
 // @Produce json,plain
 // @Param request body dto.UserAuth2faSettingsRequest true "User auth 2FA settings"
 // @Success 200 {object} dto.UserAuth2faSettingsResponse
-// @Failure 400 {string} string "Possible error codes: bad_request:invalid_request, bad_request:invalid_password"
+// @Failure 400 {string} string "Possible error codes: bad_request, bad_request:invalid_password"
 // @Failure 401 {string} string "Possible error codes: unauthorized:invalid_credentials"
 // @Router /users/auth/2fa/settings [post]
 func (a *adapter) Auth2faSettings(ctx server.ReqCtx) {
@@ -383,7 +382,7 @@ func (a *adapter) Auth2faSettings(ctx server.ReqCtx) {
 // @Produce plain
 // @Param request body dto.UserAuth2faEnableRequest true "User auth 2FA enable"
 // @Success 200
-// @Failure 400 {string} string "Possible error codes: bad_request:invalid_request, bad_request:invalid_token, bad_request:ot_enabled"
+// @Failure 400 {string} string "Possible error codes: bad_request, bad_request:invalid_token, bad_request:mfa_enabled"
 // @Router /users/auth/2fa/enable [post]
 func (a *adapter) Auth2faEnable(ctx server.ReqCtx) {
 	// Parse request json body
@@ -422,7 +421,7 @@ func (a *adapter) Auth2faEnable(ctx server.ReqCtx) {
 // @Produce plain
 // @Param request body dto.UserAuth2faDisableRequest true "User auth 2FA disable"
 // @Success 200
-// @Failure 400 {string} string "Possible error codes: bad_request:invalid_request, bad_request:invalid_password, bad_request:invalid_token, bad_request:mfa_disabled"
+// @Failure 400 {string} string "Possible error codes: bad_request, bad_request:invalid_password, bad_request:invalid_token, bad_request:mfa_disabled"
 // @Failure 401 {string} string "Possible error codes: unauthorized:invalid_credentials"
 // @Router /users/auth/2fa/disable [post]
 func (a *adapter) Auth2faDisable(ctx server.ReqCtx) {
@@ -462,7 +461,7 @@ func (a *adapter) Auth2faDisable(ctx server.ReqCtx) {
 // @Produce json,plain
 // @Param request body dto.UserAuthRequest true "User auth"
 // @Success 200 {object} dto.UserAuthResponse
-// @Failure 400 {string} string "Possible error codes: bad_request:invalid_request, bad_request:invalid_login, bad_request:invalid_password"
+// @Failure 400 {string} string "Possible error codes: bad_request, bad_request:invalid_login, bad_request:invalid_password"
 // @Failure 401 {string} string "Possible error codes: unauthorized:invalid_credentials"
 // @Router /users/auth [post]
 func (a *adapter) Auth(ctx server.ReqCtx) {
@@ -502,7 +501,7 @@ func (a *adapter) Auth(ctx server.ReqCtx) {
 // @Produce json,plain
 // @Param request body dto.UserTokenRenewRequest true "Renew JWT token"
 // @Success 200 {object} dto.UserAuthResponse
-// @Failure 400 {string} string "Possible error codes: bad_request:invalid_request, bad_request:invalid_refresh_token, bad_request:invalid_token, bad_request:token_already_used"
+// @Failure 400 {string} string "Possible error codes: bad_request, bad_request:invalid_token, bad_request:token_already_used"
 // @Router /users/auth/token/renew [post]
 func (a *adapter) AuthTokenRenew(ctx server.ReqCtx) {
 	// Parse request json body
@@ -542,8 +541,7 @@ func (a *adapter) AuthTokenRenew(ctx server.ReqCtx) {
 // @Produce json,plain
 // @Param request body dto.UserTokenValidateRequest true "Validate JWT token"
 // @Success 200 {object} dto.UserTokenValidateResponse
-// @Failure 400 {string} string "Possible error codes: bad_request:invalid_request, bad_request:invalid_access_token"
-// @Failure 401 {string} string "Possible error codes: unauthorized:invalid_token"
+// @Failure 400 {string} string "Possible error codes: bad_request, bad_request:invalid_token"
 // @Router /users/auth/token/validate [post]
 func (a *adapter) AuthTokenValidate(ctx server.ReqCtx) {
 	// Parse request json body

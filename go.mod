@@ -4,7 +4,7 @@ go 1.24.0
 
 require (
 	github.com/flash-go/flash v1.0.0-rc9
-	github.com/flash-go/sdk v1.0.0-rc3
+	github.com/flash-go/sdk v1.0.0-rc4
 	github.com/go-gormigrate/gormigrate/v2 v2.1.4
 	github.com/golang-jwt/jwt/v5 v5.2.3
 	github.com/google/uuid v1.6.0
