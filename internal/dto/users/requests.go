@@ -37,6 +37,11 @@ func (r *AdminUpdateUserRoleRequest) Validate() error {
 	return nil
 }
 
+type AdminFilterRolesRequest struct {
+	Id   *[]string `json:"id"`
+	Name *[]string `json:"name"`
+}
+
 type AdminCreateUserRequest struct {
 	Username string `json:"username"`
 	Email    string `json:"email"`
@@ -98,6 +103,13 @@ func (r *AdminCreateUserRequest) ValidatePassword() error {
 		return ErrUserInvalidPassword
 	}
 	return nil
+}
+
+type AdminFilterUsersRequest struct {
+	Id       *[]uint   `json:"id"`
+	Username *[]string `json:"username"`
+	Email    *[]string `json:"email"`
+	Role     *[]string `json:"role"`
 }
 
 type UserAuth2faValidateRequest struct {

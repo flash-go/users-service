@@ -65,15 +65,29 @@ func (a *adapter) AdminCreateRole(ctx server.ReqCtx) {
 	ctx.WriteResponse(201, dto.AdminUserRoleResponse(*role))
 }
 
-// @Summary Get user roles (admin)
+// @Summary Get users roles by filter (admin)
 // @Tags roles
 // @Security BearerAuth
 // @Produce json
-// @Success 200 {array} []dto.AdminUserRoleResponse
-// @Router /admin/users/roles [get]
-func (a *adapter) AdminGetRoles(ctx server.ReqCtx) {
-	// Get user roles
-	roles, err := a.usersService.GetRoles(ctx.Context())
+// @Param request body dto.AdminFilterRolesRequest true "Get users roles by filter (admin)"
+// @Success 200 {array} dto.AdminUserRoleResponse
+// @Router /admin/users/roles/filter [post]
+func (a *adapter) AdminFilterRoles(ctx server.ReqCtx) {
+	// Parse request json body
+	var request dto.AdminFilterRolesRequest
+	if err := ctx.ReadJson(&request); err != nil {
+		ctx.WriteErrorResponse(errors.ErrBadRequest)
+		return
+	}
+
+	// Create data
+	data := usersServicePort.FilterRolesData(request)
+
+	// Get users roles by filter
+	roles, err := a.usersService.FilterRoles(
+		ctx.Context(),
+		&data,
+	)
 	if err != nil {
 		ctx.WriteErrorResponse(err)
 		return
@@ -202,15 +216,29 @@ func (a *adapter) AdminCreateUser(ctx server.ReqCtx) {
 	)
 }
 
-// @Summary Get users (admin)
+// @Summary Get users by filter (admin)
 // @Tags users
 // @Security BearerAuth
 // @Produce json
-// @Success 200 {array} []dto.AdminUserResponse
-// @Router /admin/users [get]
-func (a *adapter) AdminGetUsers(ctx server.ReqCtx) {
-	// Get users
-	users, err := a.usersService.GetUsers(ctx.Context())
+// @Param request body dto.AdminFilterUsersRequest true "Get users by filter (admin)"
+// @Success 200 {array} dto.AdminUserResponse
+// @Router /admin/users/filter [post]
+func (a *adapter) AdminFilterUsers(ctx server.ReqCtx) {
+	// Parse request json body
+	var request dto.AdminFilterUsersRequest
+	if err := ctx.ReadJson(&request); err != nil {
+		ctx.WriteErrorResponse(errors.ErrBadRequest)
+		return
+	}
+
+	// Create data
+	data := usersServicePort.FilterUsersData(request)
+
+	// Get users by filter
+	users, err := a.usersService.FilterUsers(
+		ctx.Context(),
+		&data,
+	)
 	if err != nil {
 		ctx.WriteErrorResponse(err)
 		return

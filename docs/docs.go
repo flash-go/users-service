@@ -16,34 +16,6 @@ const docTemplate = `{
     "basePath": "{{.BasePath}}",
     "paths": {
         "/admin/users": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "users"
-                ],
-                "summary": "Get users (admin)",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "type": "array",
-                                "items": {
-                                    "$ref": "#/definitions/dto.AdminUserResponse"
-                                }
-                            }
-                        }
-                    }
-                }
-            },
             "post": {
                 "security": [
                     {
@@ -88,8 +60,8 @@ const docTemplate = `{
                 }
             }
         },
-        "/admin/users/roles": {
-            "get": {
+        "/admin/users/filter": {
+            "post": {
                 "security": [
                     {
                         "BearerAuth": []
@@ -99,24 +71,34 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "roles"
+                    "users"
                 ],
-                "summary": "Get user roles (admin)",
+                "summary": "Get users by filter (admin)",
+                "parameters": [
+                    {
+                        "description": "Get users by filter (admin)",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.AdminFilterUsersRequest"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
                             "type": "array",
                             "items": {
-                                "type": "array",
-                                "items": {
-                                    "$ref": "#/definitions/dto.AdminUserRoleResponse"
-                                }
+                                "$ref": "#/definitions/dto.AdminUserResponse"
                             }
                         }
                     }
                 }
-            },
+            }
+        },
+        "/admin/users/roles": {
             "post": {
                 "security": [
                     {
@@ -156,6 +138,44 @@ const docTemplate = `{
                         "description": "Possible error codes: bad_request, bad_request:invalid_role_id, bad_request:invalid_role_name, bad_request:role_exist_id, bad_request:role_exist_name",
                         "schema": {
                             "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/users/roles/filter": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "roles"
+                ],
+                "summary": "Get users roles by filter (admin)",
+                "parameters": [
+                    {
+                        "description": "Get users roles by filter (admin)",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.AdminFilterRolesRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/dto.AdminUserRoleResponse"
+                            }
                         }
                     }
                 }
@@ -542,7 +562,7 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Possible error codes: bad_request, bad_request:invalid_refresh_token, bad_request:invalid_token, bad_request:token_already_used",
+                        "description": "Possible error codes: bad_request, bad_request:invalid_token, bad_request:token_already_used",
                         "schema": {
                             "type": "string"
                         }
@@ -583,13 +603,7 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Possible error codes: bad_request, bad_request:invalid_access_token",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "401": {
-                        "description": "Possible error codes: unauthorized:invalid_token",
+                        "description": "Possible error codes: bad_request, bad_request:invalid_token",
                         "schema": {
                             "type": "string"
                         }
@@ -648,6 +662,52 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string"
+                }
+            }
+        },
+        "dto.AdminFilterRolesRequest": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "name": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "dto.AdminFilterUsersRequest": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "id": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "role": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "username": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },

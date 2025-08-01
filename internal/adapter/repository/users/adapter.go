@@ -104,10 +104,25 @@ func (a *adapter) UpdateRoleFieldsById(ctx context.Context, id string, fields *u
 	return nil
 }
 
-func (a *adapter) GetRoles(ctx context.Context) (*[]entity.Role, error) {
-	// Get roles from database
+func (a *adapter) FilterRoles(ctx context.Context, data *usersRepositoryAdapterPort.FilterRolesData) (*[]entity.Role, error) {
+	// Create client model
 	obj := []model.UserRole{}
-	if err := a.postgres.WithContext(ctx).Find(&obj).Error; err != nil {
+
+	// Create query with context
+	query := a.postgres.WithContext(ctx)
+
+	// Filter by id
+	if data.Id != nil {
+		query = query.Where("id IN ?", *data.Id)
+	}
+
+	// Filter by name
+	if data.Name != nil {
+		query = query.Where("name IN ?", *data.Name)
+	}
+
+	// Get clients from database
+	if err := query.Find(&obj).Error; err != nil {
 		return nil, err
 	}
 
@@ -237,10 +252,35 @@ func (a *adapter) UpdateUserFieldsById(ctx context.Context, id uint, fields *use
 	return nil
 }
 
-func (a *adapter) GetUsers(ctx context.Context) (*[]entity.User, error) {
-	// Get users from database
+func (a *adapter) FilterUsers(ctx context.Context, data *usersRepositoryAdapterPort.FilterUsersData) (*[]entity.User, error) {
+	// Create client model
 	obj := []model.User{}
-	if err := a.postgres.WithContext(ctx).Preload("Role").Find(&obj).Error; err != nil {
+
+	// Create query with context
+	query := a.postgres.WithContext(ctx)
+
+	// Filter by id
+	if data.Id != nil {
+		query = query.Where("id IN ?", *data.Id)
+	}
+
+	// Filter by username
+	if data.Username != nil {
+		query = query.Where("username IN ?", *data.Username)
+	}
+
+	// Filter by email
+	if data.Email != nil {
+		query = query.Where("email IN ?", *data.Email)
+	}
+
+	// Filter by role
+	if data.Role != nil {
+		query = query.Where("role_id IN ?", *data.Role)
+	}
+
+	// Get clients from database
+	if err := query.Preload("Role").Find(&obj).Error; err != nil {
 		return nil, err
 	}
 

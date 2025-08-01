@@ -157,6 +157,8 @@ func main() {
 
 	// Add routes
 	httpServer.
+		// Users roles
+
 		// Create user role (admin)
 		AddRoute(
 			http.MethodPost,
@@ -164,11 +166,11 @@ func main() {
 			usersHandler.AdminCreateRole,
 			usersHandler.AuthMiddleware(true, adminRole),
 		).
-		// Get user roles (admin)
+		// Filter users roles (admin)
 		AddRoute(
-			http.MethodGet,
-			"/admin/users/roles",
-			usersHandler.AdminGetRoles,
+			http.MethodPost,
+			"/admin/users/roles/filter",
+			usersHandler.AdminFilterRoles,
 			usersHandler.AuthMiddleware(true, adminRole),
 		).
 		// Delete user role (admin)
@@ -185,6 +187,9 @@ func main() {
 			usersHandler.AdminUpdateRole,
 			usersHandler.AuthMiddleware(true, adminRole),
 		).
+
+		// Users
+
 		// Create user (admin)
 		AddRoute(
 			http.MethodPost,
@@ -192,11 +197,11 @@ func main() {
 			usersHandler.AdminCreateUser,
 			usersHandler.AuthMiddleware(true, adminRole),
 		).
-		// Get users (admin)
+		// Filter users (admin)
 		AddRoute(
-			http.MethodGet,
-			"/admin/users",
-			usersHandler.AdminGetUsers,
+			http.MethodPost,
+			"/admin/users/filter",
+			usersHandler.AdminFilterUsers,
 			usersHandler.AuthMiddleware(true, adminRole),
 		).
 		// Delete user (admin)
@@ -213,6 +218,9 @@ func main() {
 			usersHandler.GetProfile,
 			usersHandler.AuthMiddleware(true),
 		).
+
+		// Auth
+
 		// User auth 2FA validate
 		AddRoute(
 			http.MethodPost,

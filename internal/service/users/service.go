@@ -68,8 +68,9 @@ func (s *service) CreateRole(ctx context.Context, data *usersServicePort.CreateR
 	return role, nil
 }
 
-func (s *service) GetRoles(ctx context.Context) (*[]entity.Role, error) {
-	return s.usersRepository.GetRoles(ctx)
+func (s *service) FilterRoles(ctx context.Context, data *usersServicePort.FilterRolesData) (*[]entity.Role, error) {
+	d := usersRepositoryAdapterPort.FilterRolesData(*data)
+	return s.usersRepository.FilterRoles(ctx, &d)
 }
 
 func (s *service) DeleteRole(ctx context.Context, id string) error {
@@ -158,8 +159,9 @@ func (s *service) CreateUser(ctx context.Context, data *usersServicePort.CreateU
 	return user, nil
 }
 
-func (s *service) GetUsers(ctx context.Context) (*[]entity.User, error) {
-	return s.usersRepository.GetUsers(ctx)
+func (s *service) FilterUsers(ctx context.Context, data *usersServicePort.FilterUsersData) (*[]entity.User, error) {
+	d := usersRepositoryAdapterPort.FilterUsersData(*data)
+	return s.usersRepository.FilterUsers(ctx, &d)
 }
 
 func (s *service) GetUser(ctx context.Context, id uint) (*entity.User, error) {

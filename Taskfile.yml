@@ -57,7 +57,7 @@ tasks:
   gen-docs:
     desc: Generate Swagger docs
     cmds:
-      - swag init -d cmd/server,internal
+      - swag init -d cmd/server,internal/adapter/handler --parseDependency
 
   env:
     desc: Create .env files

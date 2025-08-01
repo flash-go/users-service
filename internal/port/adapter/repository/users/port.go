@@ -12,7 +12,7 @@ type Interface interface {
 	DeleteRoleById(ctx context.Context, id string) error
 	UpdateRole(ctx context.Context, role *entity.Role) error
 	UpdateRoleFieldsById(ctx context.Context, id string, fields *RoleFieldData) error
-	GetRoles(ctx context.Context) (*[]entity.Role, error)
+	FilterRoles(ctx context.Context, data *FilterRolesData) (*[]entity.Role, error)
 	GetRoleBy(ctx context.Context, field RoleField, value any) (*entity.Role, error)
 	ExistRoleBy(ctx context.Context, field RoleField, value any) (bool, error)
 	// Users
@@ -20,7 +20,7 @@ type Interface interface {
 	DeleteUserById(ctx context.Context, id uint) error
 	UpdateUser(ctx context.Context, user *entity.User) error
 	UpdateUserFieldsById(ctx context.Context, id uint, fields *UserFieldData) error
-	GetUsers(ctx context.Context) (*[]entity.User, error)
+	FilterUsers(ctx context.Context, data *FilterUsersData) (*[]entity.User, error)
 	GetUserBy(ctx context.Context, field UserField, value any) (*entity.User, error)
 	GetUserByLogin(ctx context.Context, login string) (*entity.User, error)
 	ExistUserBy(ctx context.Context, field UserField, value any) (bool, error)
@@ -48,3 +48,15 @@ const (
 )
 
 type UserFieldData map[UserField]any
+
+type FilterRolesData struct {
+	Id   *[]string
+	Name *[]string
+}
+
+type FilterUsersData struct {
+	Id       *[]uint
+	Username *[]string
+	Email    *[]string
+	Role     *[]string
+}

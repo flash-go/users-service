@@ -7,12 +7,12 @@ import (
 type Interface interface {
 	// Roles
 	AdminCreateRole(ctx server.ReqCtx)
-	AdminGetRoles(ctx server.ReqCtx)
+	AdminFilterRoles(ctx server.ReqCtx)
 	AdminDeleteRole(ctx server.ReqCtx)
 	AdminUpdateRole(ctx server.ReqCtx)
 	// Users
 	AdminCreateUser(ctx server.ReqCtx)
-	AdminGetUsers(ctx server.ReqCtx)
+	AdminFilterUsers(ctx server.ReqCtx)
 	AdminDeleteUser(ctx server.ReqCtx)
 	GetProfile(ctx server.ReqCtx)
 	// Auth

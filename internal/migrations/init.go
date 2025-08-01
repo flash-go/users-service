@@ -10,7 +10,7 @@ func Migration_users_init() *gormigrate.Migration {
 		ID: "users_init",
 		Migrate: func(tx *gorm.DB) error {
 			if err := tx.Exec(`
-				CREATE TABLE user_roles (
+				CREATE TABLE IF NOT EXISTS user_roles (
 					id TEXT PRIMARY KEY,
 					name TEXT NOT NULL UNIQUE,
 					created TIMESTAMPTZ NOT NULL
@@ -20,7 +20,7 @@ func Migration_users_init() *gormigrate.Migration {
 			}
 
 			if err := tx.Exec(`
-				CREATE TABLE users (
+				CREATE TABLE IF NOT EXISTS users (
 					id SERIAL PRIMARY KEY,
 					created TIMESTAMPTZ NOT NULL,
 					username TEXT NOT NULL UNIQUE,
@@ -38,7 +38,7 @@ func Migration_users_init() *gormigrate.Migration {
 				return err
 			}
 
-			if err := tx.Exec(`CREATE INDEX idx_users_role_id ON users(role_id);`).Error; err != nil {
+			if err := tx.Exec(`CREATE INDEX IF NOT EXISTS idx_users_role_id ON users(role_id);`).Error; err != nil {
 				return err
 			}
 

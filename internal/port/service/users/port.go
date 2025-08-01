@@ -9,12 +9,12 @@ import (
 type Interface interface {
 	// Roles
 	CreateRole(ctx context.Context, data *CreateRoleData) (*entity.Role, error)
-	GetRoles(ctx context.Context) (*[]entity.Role, error)
+	FilterRoles(ctx context.Context, data *FilterRolesData) (*[]entity.Role, error)
 	DeleteRole(ctx context.Context, id string) error
 	UpdateRole(ctx context.Context, id string, data *UpdateRoleData) error
 	// Users
 	CreateUser(ctx context.Context, data *CreateUserData) (*entity.User, error)
-	GetUsers(ctx context.Context) (*[]entity.User, error)
+	FilterUsers(ctx context.Context, data *FilterUsersData) (*[]entity.User, error)
 	GetUser(ctx context.Context, id uint) (*entity.User, error)
 	DeleteUser(ctx context.Context, id uint) error
 	// Auth
@@ -33,6 +33,10 @@ type CreateRoleData struct {
 	Id   string
 	Name string
 }
+type FilterRolesData struct {
+	Id   *[]string
+	Name *[]string
+}
 type UpdateRoleData struct {
 	Name string
 }
@@ -41,6 +45,12 @@ type CreateUserData struct {
 	Email    string
 	Password string
 	Role     string
+}
+type FilterUsersData struct {
+	Id       *[]uint
+	Username *[]string
+	Email    *[]string
+	Role     *[]string
 }
 type UserAuth2faValidateData struct {
 	User  uint

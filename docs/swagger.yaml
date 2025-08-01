@@ -18,6 +18,36 @@ definitions:
       name:
         type: string
     type: object
+  dto.AdminFilterRolesRequest:
+    properties:
+      id:
+        items:
+          type: string
+        type: array
+      name:
+        items:
+          type: string
+        type: array
+    type: object
+  dto.AdminFilterUsersRequest:
+    properties:
+      email:
+        items:
+          type: string
+        type: array
+      id:
+        items:
+          type: integer
+        type: array
+      role:
+        items:
+          type: string
+        type: array
+      username:
+        items:
+          type: string
+        type: array
+    type: object
   dto.AdminUpdateUserRoleRequest:
     properties:
       name:
@@ -136,23 +166,6 @@ info:
   version: "1.0"
 paths:
   /admin/users:
-    get:
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              items:
-                $ref: '#/definitions/dto.AdminUserResponse'
-              type: array
-            type: array
-      security:
-      - BearerAuth: []
-      summary: Get users (admin)
-      tags:
-      - users
     post:
       consumes:
       - application/json
@@ -205,8 +218,15 @@ paths:
       summary: Delete user (admin)
       tags:
       - users
-  /admin/users/roles:
-    get:
+  /admin/users/filter:
+    post:
+      parameters:
+      - description: Get users by filter (admin)
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.AdminFilterUsersRequest'
       produces:
       - application/json
       responses:
@@ -214,15 +234,14 @@ paths:
           description: OK
           schema:
             items:
-              items:
-                $ref: '#/definitions/dto.AdminUserRoleResponse'
-              type: array
+              $ref: '#/definitions/dto.AdminUserResponse'
             type: array
       security:
       - BearerAuth: []
-      summary: Get user roles (admin)
+      summary: Get users by filter (admin)
       tags:
-      - roles
+      - users
+  /admin/users/roles:
     post:
       consumes:
       - application/json
@@ -301,6 +320,29 @@ paths:
       security:
       - BearerAuth: []
       summary: Update user role (admin)
+      tags:
+      - roles
+  /admin/users/roles/filter:
+    post:
+      parameters:
+      - description: Get users roles by filter (admin)
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.AdminFilterRolesRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.AdminUserRoleResponse'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Get users roles by filter (admin)
       tags:
       - roles
   /users/auth:
@@ -472,8 +514,8 @@ paths:
           schema:
             $ref: '#/definitions/dto.UserAuthResponse'
         "400":
-          description: 'Possible error codes: bad_request, bad_request:invalid_refresh_token,
-            bad_request:invalid_token, bad_request:token_already_used'
+          description: 'Possible error codes: bad_request, bad_request:invalid_token,
+            bad_request:token_already_used'
           schema:
             type: string
       summary: Renew JWT token
@@ -501,11 +543,7 @@ paths:
           schema:
             $ref: '#/definitions/dto.UserTokenValidateResponse'
         "400":
-          description: 'Possible error codes: bad_request, bad_request:invalid_access_token'
-          schema:
-            type: string
-        "401":
-          description: 'Possible error codes: unauthorized:invalid_token'
+          description: 'Possible error codes: bad_request, bad_request:invalid_token'
           schema:
             type: string
       summary: Validate JWT token
