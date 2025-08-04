@@ -14,10 +14,18 @@ import (
 	"strconv"
 
 	// Framework
+	//
+	// Core of the Flash Framework. Contains the fundamental components of
+	// the application.
+
 	"github.com/flash-go/flash/http"
 	"github.com/flash-go/flash/http/server"
 
 	// SDK
+	//
+	// A high-level software development toolkit based on the Flash Framework
+	// for building highly efficient and fault-tolerant applications.
+
 	"github.com/flash-go/sdk/config"
 	"github.com/flash-go/sdk/errors"
 	"github.com/flash-go/sdk/infra"
@@ -26,16 +34,24 @@ import (
 	"github.com/flash-go/sdk/telemetry"
 
 	// Implementations
+
+	//// Handlers
 	httpUsersHandlerAdapterImpl "github.com/flash-go/users-service/internal/adapter/handler/users/http"
+
+	//// Repository
 	jwtRepositoryAdapterImpl "github.com/flash-go/users-service/internal/adapter/repository/jwt"
 	usersRepositoryAdapterImpl "github.com/flash-go/users-service/internal/adapter/repository/users"
+
+	//// Services
 	jwtServiceImpl "github.com/flash-go/users-service/internal/service/jwt"
 	otpServiceImpl "github.com/flash-go/users-service/internal/service/otp"
 	usersServiceImpl "github.com/flash-go/users-service/internal/service/users"
 
+	// Config
+	internalConfig "github.com/flash-go/users-service/internal/config"
+
 	// Other
 	_ "github.com/flash-go/users-service/docs"
-	internalConfig "github.com/flash-go/users-service/internal/config"
 	_ "github.com/joho/godotenv/autoload"
 )
 
@@ -164,28 +180,36 @@ func main() {
 			http.MethodPost,
 			"/admin/users/roles",
 			usersHandler.AdminCreateRole,
-			usersHandler.AuthMiddleware(true, adminRole),
+			usersHandler.AuthMiddleware(
+				httpUsersHandlerAdapterImpl.WithAuthRolesOption(adminRole),
+			),
 		).
 		// Filter users roles (admin)
 		AddRoute(
 			http.MethodPost,
 			"/admin/users/roles/filter",
 			usersHandler.AdminFilterRoles,
-			usersHandler.AuthMiddleware(true, adminRole),
+			usersHandler.AuthMiddleware(
+				httpUsersHandlerAdapterImpl.WithAuthRolesOption(adminRole),
+			),
 		).
 		// Delete user role (admin)
 		AddRoute(
 			http.MethodDelete,
 			"/admin/users/roles/{id}",
 			usersHandler.AdminDeleteRole,
-			usersHandler.AuthMiddleware(true, adminRole),
+			usersHandler.AuthMiddleware(
+				httpUsersHandlerAdapterImpl.WithAuthRolesOption(adminRole),
+			),
 		).
 		// Update user role (admin)
 		AddRoute(
 			http.MethodPatch,
 			"/admin/users/roles/{id}",
 			usersHandler.AdminUpdateRole,
-			usersHandler.AuthMiddleware(true, adminRole),
+			usersHandler.AuthMiddleware(
+				httpUsersHandlerAdapterImpl.WithAuthRolesOption(adminRole),
+			),
 		).
 
 		// Users
@@ -195,28 +219,34 @@ func main() {
 			http.MethodPost,
 			"/admin/users",
 			usersHandler.AdminCreateUser,
-			usersHandler.AuthMiddleware(true, adminRole),
+			usersHandler.AuthMiddleware(
+				httpUsersHandlerAdapterImpl.WithAuthRolesOption(adminRole),
+			),
 		).
 		// Filter users (admin)
 		AddRoute(
 			http.MethodPost,
 			"/admin/users/filter",
 			usersHandler.AdminFilterUsers,
-			usersHandler.AuthMiddleware(true, adminRole),
+			usersHandler.AuthMiddleware(
+				httpUsersHandlerAdapterImpl.WithAuthRolesOption(adminRole),
+			),
 		).
 		// Delete user (admin)
 		AddRoute(
 			http.MethodDelete,
 			"/admin/users/{id}",
 			usersHandler.AdminDeleteUser,
-			usersHandler.AuthMiddleware(true, adminRole),
+			usersHandler.AuthMiddleware(
+				httpUsersHandlerAdapterImpl.WithAuthRolesOption(adminRole),
+			),
 		).
 		// User profile
 		AddRoute(
 			http.MethodGet,
 			"/users/profile",
 			usersHandler.GetProfile,
-			usersHandler.AuthMiddleware(true),
+			usersHandler.AuthMiddleware(),
 		).
 
 		// Auth
@@ -226,28 +256,30 @@ func main() {
 			http.MethodPost,
 			"/users/auth/2fa/validate",
 			usersHandler.Auth2faValidate,
-			usersHandler.AuthMiddleware(false),
+			usersHandler.AuthMiddleware(
+				httpUsersHandlerAdapterImpl.WithoutAuthMfaOption(),
+			),
 		).
 		// User auth 2FA settings
 		AddRoute(
 			http.MethodPost,
 			"/users/auth/2fa/settings",
 			usersHandler.Auth2faSettings,
-			usersHandler.AuthMiddleware(true),
+			usersHandler.AuthMiddleware(),
 		).
 		// User auth 2FA enable
 		AddRoute(
 			http.MethodPost,
 			"/users/auth/2fa/enable",
 			usersHandler.Auth2faEnable,
-			usersHandler.AuthMiddleware(true),
+			usersHandler.AuthMiddleware(),
 		).
 		// User auth 2FA disable
 		AddRoute(
 			http.MethodPost,
 			"/users/auth/2fa/disable",
 			usersHandler.Auth2faDisable,
-			usersHandler.AuthMiddleware(true),
+			usersHandler.AuthMiddleware(),
 		).
 		// User auth
 		AddRoute(

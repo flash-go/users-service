@@ -604,7 +604,7 @@ func (a *adapter) AuthTokenValidate(ctx server.ReqCtx) {
 
 // Middlewares
 
-func (a *adapter) AuthMiddleware(mfa bool, roles ...string) func(server.ReqHandler) server.ReqHandler {
+func (a *adapter) AuthMiddleware(options ...httpUsersHandlerAdapterPort.AuthOption) func(server.ReqHandler) server.ReqHandler {
 	return func(handler server.ReqHandler) server.ReqHandler {
 		return func(ctx server.ReqCtx) {
 			// Get auth token
@@ -615,7 +615,7 @@ func (a *adapter) AuthMiddleware(mfa bool, roles ...string) func(server.ReqHandl
 			}
 
 			// Parse and validate access token
-			user, err := a.usersService.AuthTokenValidate(
+			result, err := a.usersService.AuthTokenValidate(
 				ctx.Context(),
 				&usersServicePort.UserAuthTokenValidateData{
 					AccessToken: token,
@@ -627,23 +627,58 @@ func (a *adapter) AuthMiddleware(mfa bool, roles ...string) func(server.ReqHandl
 			}
 
 			// Set data to ctx
-			ctx.SetUserValue("user", user.User)
-			ctx.SetUserValue("role", user.Role)
-			ctx.SetUserValue("mfa", user.Mfa)
+			ctx.SetUserValue("user", result.User)
+			ctx.SetUserValue("role", result.Role)
+			ctx.SetUserValue("mfa_value", result.Mfa)
+			ctx.SetUserValue("mfa_validation", true)
 
-			// Check MFA
-			if mfa && user.Mfa {
-				ctx.WriteErrorResponse(httpUsersHandlerAdapterPort.ErrAuth2faRequired)
-				return
+			// Apply options
+			for _, option := range options {
+				r := httpUsersHandlerAdapterPort.TokenValidateResult(*result)
+				if err := option.Apply(ctx, &r); err != nil {
+					ctx.WriteErrorResponse(err)
+					return
+				}
 			}
 
-			// Check role permissions
-			if len(roles) > 0 && !slices.Contains(roles, user.Role) {
-				ctx.WriteErrorResponse(httpUsersHandlerAdapterPort.ErrAuthInsufficientPermissions)
+			// Check two factor
+			if ctx.UserValue("mfa_validation").(bool) && result.Mfa {
+				ctx.WriteErrorResponse(httpUsersHandlerAdapterPort.ErrAuth2faRequired)
 				return
 			}
 
 			handler(ctx)
 		}
 	}
+}
+
+// Options for auth middleware
+
+// Check role permissions
+type authRolesOption struct {
+	roles []string
+}
+
+func (h authRolesOption) Apply(ctx server.ReqCtx, response *httpUsersHandlerAdapterPort.TokenValidateResult) error {
+	if len(h.roles) > 0 && !slices.Contains(h.roles, response.Role) {
+		return httpUsersHandlerAdapterPort.ErrAuthInsufficientPermissions
+	}
+	return nil
+}
+
+func WithAuthRolesOption(roles ...string) authRolesOption {
+	return authRolesOption{roles}
+}
+
+// Without MFA checking
+type authMfaOption struct {
+}
+
+func (h authMfaOption) Apply(ctx server.ReqCtx, response *httpUsersHandlerAdapterPort.TokenValidateResult) error {
+	ctx.SetUserValue("mfa_validation", false)
+	return nil
+}
+
+func WithoutAuthMfaOption() authMfaOption {
+	return authMfaOption{}
 }

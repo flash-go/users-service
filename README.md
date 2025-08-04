@@ -1,6 +1,6 @@
 # users-service
 
-Microservice written in Go for managing authorization and authentication of users, based on the [Flash Framework](https://github.com/flash-go/flash) with Clean and Hexagonal Architecture.
+Microservice written in Go for managing authorization and authentication of users with JWT and OTP support, based on the [Flash Framework](https://github.com/flash-go/flash) with Hexagonal Architecture.
 
 ## Features
 

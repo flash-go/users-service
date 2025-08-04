@@ -24,5 +24,20 @@ type Interface interface {
 	AuthTokenRenew(ctx server.ReqCtx)
 	AuthTokenValidate(ctx server.ReqCtx)
 	// Middlewares
-	AuthMiddleware(twoFactor bool, roles ...string) func(server.ReqHandler) server.ReqHandler
+	AuthMiddleware(options ...AuthOption) func(server.ReqHandler) server.ReqHandler
+}
+
+type TokenValidateResult struct {
+	Id       string
+	User     uint
+	Role     string
+	Mfa      bool
+	Expires  int64
+	Issued   int64
+	Issuer   string
+	Audience []string
+}
+
+type AuthOption interface {
+	Apply(server.ReqCtx, *TokenValidateResult) error
 }
