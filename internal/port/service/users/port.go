@@ -44,6 +44,7 @@ type CreateUserData struct {
 	Username string
 	Email    string
 	Password string
+	Name     string
 	Role     string
 }
 type FilterUsersData struct {

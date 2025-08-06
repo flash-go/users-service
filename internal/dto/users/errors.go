@@ -10,6 +10,7 @@ var (
 	ErrUserInvalidUsername        = errors.New(errors.ErrBadRequest, "invalid_username")
 	ErrUserInvalidEmail           = errors.New(errors.ErrBadRequest, "invalid_email")
 	ErrUserInvalidPassword        = errors.New(errors.ErrBadRequest, "invalid_password")
+	ErrUserInvalidName            = errors.New(errors.ErrBadRequest, "invalid_name")
 	ErrUserInvalidLogin           = errors.New(errors.ErrBadRequest, "invalid_login")
 	ErrUserAuth2faInvalidToken    = errors.New(errors.ErrBadRequest, "invalid_token")
 	ErrUserAuth2faInvalidPassword = errors.New(errors.ErrBadRequest, "invalid_password")

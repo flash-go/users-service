@@ -26,6 +26,7 @@ func Migration_users_init() *gormigrate.Migration {
 					username TEXT NOT NULL UNIQUE,
 					email TEXT NOT NULL UNIQUE,
 					password TEXT NOT NULL,
+					name TEXT NOT NULL,
 					role_id TEXT NOT NULL,
 					mfa BOOLEAN DEFAULT FALSE,
 					otp_secret TEXT NOT NULL,

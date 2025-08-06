@@ -21,6 +21,7 @@ func NewUser(data UserData) (*entity.User, error) {
 		Username:  strings.ToLower(data.Username),
 		Email:     strings.ToLower(data.Email),
 		Password:  string(passHash),
+		Name:      data.Name,
 		OtpSecret: data.OtpSecret,
 		Role:      data.Role,
 		Created:   time.Unix(0, data.Created.UnixNano()),
@@ -31,6 +32,7 @@ type UserData struct {
 	Username  string
 	Email     string
 	Password  string
+	Name      string
 	Role      entity.Role
 	Created   time.Time
 	OtpSecret string

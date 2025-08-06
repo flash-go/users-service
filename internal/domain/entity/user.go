@@ -14,6 +14,7 @@ type User struct {
 	Username  string
 	Email     string
 	Password  string
+	Name      string
 	Role      Role
 	Mfa       bool
 	OtpSecret string

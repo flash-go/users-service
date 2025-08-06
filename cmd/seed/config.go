@@ -9,6 +9,7 @@ import (
 const (
 	adminRoleId   = "admin"
 	adminUsername = "admin"
+	adminName     = "admin"
 )
 
 var envMap = map[string]string{

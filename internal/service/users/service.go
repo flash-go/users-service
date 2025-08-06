@@ -142,6 +142,7 @@ func (s *service) CreateUser(ctx context.Context, data *usersServicePort.CreateU
 			Username:  data.Username,
 			Email:     data.Email,
 			Password:  data.Password,
+			Name:      data.Name,
 			Role:      *role,
 			OtpSecret: *secret,
 			Created:   time.Now(),

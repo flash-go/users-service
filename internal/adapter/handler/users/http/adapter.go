@@ -173,7 +173,7 @@ func (a *adapter) AdminUpdateRole(ctx server.ReqCtx) {
 // @Produce json,plain
 // @Param request body dto.AdminCreateUserRequest true "Create user (admin)"
 // @Success 201 {object} dto.AdminUserResponse
-// @Failure 400 {string} string "Possible error codes: bad_request, bad_request:invalid_username, bad_request:invalid_email, bad_request:invalid_password, bad_request:user_exist_email, bad_request:user_exist_username, bad_request:role_not_found"
+// @Failure 400 {string} string "Possible error codes: bad_request, bad_request:invalid_name, bad_request:invalid_username, bad_request:invalid_email, bad_request:invalid_password, bad_request:user_exist_email, bad_request:user_exist_username, bad_request:role_not_found"
 // @Router /admin/users [post]
 func (a *adapter) AdminCreateUser(ctx server.ReqCtx) {
 	// Parse request json body
@@ -210,6 +210,7 @@ func (a *adapter) AdminCreateUser(ctx server.ReqCtx) {
 			Created:  user.Created,
 			Username: user.Username,
 			Email:    user.Email,
+			Name:     user.Name,
 			Role:     dto.AdminUserRoleResponse(user.Role),
 			Mfa:      user.Mfa,
 		},
@@ -252,6 +253,7 @@ func (a *adapter) AdminFilterUsers(ctx server.ReqCtx) {
 			Created:  user.Created,
 			Username: user.Username,
 			Email:    user.Email,
+			Name:     user.Name,
 			Role:     dto.AdminUserRoleResponse(user.Role),
 			Mfa:      user.Mfa,
 		}
@@ -315,6 +317,7 @@ func (a *adapter) GetProfile(ctx server.ReqCtx) {
 			Created:  user.Created,
 			Username: user.Username,
 			Email:    user.Email,
+			Name:     user.Name,
 			Role:     dto.AdminUserRoleResponse(user.Role),
 			Mfa:      user.Mfa,
 		},

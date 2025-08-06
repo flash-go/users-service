@@ -139,6 +139,7 @@ func main() {
 			Username: adminUsername,
 			Email:    os.Getenv("ADMIN_EMAIL"),
 			Password: os.Getenv("ADMIN_PASSWORD"),
+			Name:     adminName,
 			Role:     adminRoleId,
 		},
 	); err != nil && !errors.Is(err, usersServicePort.ErrExistUsername) && !errors.Is(err, usersServicePort.ErrExistEmail) {

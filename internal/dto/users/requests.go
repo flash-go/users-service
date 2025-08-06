@@ -46,10 +46,14 @@ type AdminCreateUserRequest struct {
 	Username string `json:"username"`
 	Email    string `json:"email"`
 	Password string `json:"password"`
+	Name     string `json:"name"`
 	Role     string `json:"role"`
 }
 
 func (r *AdminCreateUserRequest) Validate() error {
+	if err := r.ValidateName(); err != nil {
+		return err
+	}
 	if err := r.ValidateUsername(); err != nil {
 		return err
 	}
@@ -58,6 +62,13 @@ func (r *AdminCreateUserRequest) Validate() error {
 	}
 	if err := r.ValidatePassword(); err != nil {
 		return err
+	}
+	return nil
+}
+
+func (r *AdminCreateUserRequest) ValidateName() error {
+	if r.Name == "" {
+		return ErrUserInvalidName
 	}
 	return nil
 }
