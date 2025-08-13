@@ -41,15 +41,20 @@ task env
 
 ### 3. Setup .env.server
 
-| Environment Variable | Description                                                                 |
-|----------------------|-----------------------------------------------------------------------------|
-| CONSUL_AGENT         | Full address (host:port) of the Consul agent (e.g., `localhost:8500`).      |
-| SERVICE_NAME         | Name used to register the service in Consul.                                |
-| SERVICE_HOST         | Host address under which the service is accessible for Consul registration. |
-| SERVICE_PORT         | Port number under which the service is accessible for Consul registration.  |
-| SERVER_HOST          | Host address the HTTP server should bind to (e.g., `0.0.0.0`).              |
-| SERVER_PORT          | Port number the HTTP server should listen on (e.g., `8080`).                |
-| LOG_LEVEL            | Logging level. See the log level table for details.                         |
+| Environment Variable        | Description                                                                               |
+|-----------------------------|-------------------------------------------------------------------------------------------|
+| CONSUL_ADDR                 | Full address (host:port) of the Consul agent (e.g., `localhost:8500`).                    |
+| CONSUL_CA_CRT               | Base64 CA certificate file used to verify the Consul server's TLS certificate.            |
+| CONSUL_CLIENT_CRT           | Base64 client certificate file used for mTLS authentication with Consul.                  |
+| CONSUL_CLIENT_KEY           | Base64 private key corresponding to `CONSUL_CLIENT_CRT` for mTLS authentication.          |
+| CONSUL_INSECURE_SKIP_VERIFY | If set to `true`, disables TLS certificate verification (not recommended for production). |
+| CONSUL_TOKEN                | Consul ACL token for authenticating requests to the Consul agent or server.               |
+| SERVICE_NAME                | Name used to register the service in Consul.                                              |
+| SERVICE_HOST                | Host address under which the service is accessible for Consul registration.               |
+| SERVICE_PORT                | Port number under which the service is accessible for Consul registration.                |
+| SERVER_HOST                 | Host address the HTTP server should bind to (e.g., `0.0.0.0`).                            |
+| SERVER_PORT                 | Port number the HTTP server should listen on (e.g., `8080`).                              |
+| LOG_LEVEL                   | Logging level. See the log level table for details.                                       |
 
 #### Log Levels
 
@@ -67,34 +72,47 @@ task env
 
 ### 4. Setup .env.migrate
 
-| Environment Variable | Description                                                                           |
-|----------------------|---------------------------------------------------------------------------------------|
-| CONSUL_AGENT         | Full address (host:port) of the Consul agent (e.g., `localhost:8500`).                |
-| SERVICE_NAME         | The name of the service in Consul used to retrieve database connection configuration. |
+| Environment Variable        | Description                                                                               |
+|-----------------------------|-------------------------------------------------------------------------------------------|
+| CONSUL_ADDR                 | Full address (host:port) of the Consul agent (e.g., `localhost:8500`).                    |
+| CONSUL_CA_CRT               | Base64 CA certificate file used to verify the Consul server's TLS certificate.            |
+| CONSUL_CLIENT_CRT           | Base64 client certificate file used for mTLS authentication with Consul.                  |
+| CONSUL_CLIENT_KEY           | Base64 private key corresponding to `CONSUL_CLIENT_CRT` for mTLS authentication.          |
+| CONSUL_INSECURE_SKIP_VERIFY | If set to `true`, disables TLS certificate verification (not recommended for production). |
+| CONSUL_TOKEN                | Consul ACL token for authenticating requests to the Consul agent or server.               |
+| SERVICE_NAME                | The name of the service in Consul used to retrieve database connection configuration.     |
 
 ### 5. Setup .env.seed
 
-| Environment Variable    | Description                                                                                 |
-|-------------------------|---------------------------------------------------------------------------------------------|
-| CONSUL_AGENT            | Full address (host:port) of the Consul agent (e.g., `localhost:8500`).                      |
-| SERVICE_NAME            | The name of the service in Consul used to retrieve database connection configuration.       |
-| OTEL_COLLECTOR_GRPC     | Address of the OpenTelemetry Collector for exporting traces via gRPC.                       |
-| OTP_ISSUER              | Issuer name used when generating OTP codes (used in 2FA systems).                           |
-| JWT_ACCESS_TTL          | Lifetime duration of the access token (e.g., `15m` for 15 minutes).                         |
-| JWT_REFRESH_TTL         | Lifetime duration of the refresh token (e.g., `360h` for 15 days).                          |
-| JWT_ISSUER              | Issuer name for JWT tokens, typically the service or organization name.                     |
-| POSTGRES_HOST           | Hostname or IP address of the PostgreSQL database server.                                   |
-| POSTGRES_PORT           | Port number on which the PostgreSQL database server is listening.                           |
-| POSTGRES_USER           | Username used to connect to the PostgreSQL database.                                        |
-| POSTGRES_PASSWORD       | Password used to authenticate with the PostgreSQL database.                                 |
-| POSTGRES_DB             | Name of the PostgreSQL database to connect to.                                              |
-| REDIS_HOST              | Hostname or IP address of the Redis server.                                                 |
-| REDIS_PORT              | Port number on which the Redis server is listening.                                         |
-| REDIS_PASSWORD          | Password used to authenticate with the Redis server.                                        |
-| REDIS_DB                | Redis database number to use (e.g., `0` is the default).                                    |
-| ADMIN_ROLE_NAME         | Name of the admin role created during initial setup.                                        |
-| ADMIN_EMAIL             | Email address of the initial admin user.                                                    |
-| ADMIN_PASSWORD          | Password of the initial admin user.                                                         |
+| Environment Variable        | Description                                                                               |
+|-----------------------------|-------------------------------------------------------------------------------------------|
+| CONSUL_ADDR                 | Full address (host:port) of the Consul agent (e.g., `localhost:8500`).                    |
+| CONSUL_CA_CRT               | Base64 CA certificate file used to verify the Consul server's TLS certificate.            |
+| CONSUL_CLIENT_CRT           | Base64 client certificate file used for mTLS authentication with Consul.                  |
+| CONSUL_CLIENT_KEY           | Base64 private key corresponding to `CONSUL_CLIENT_CRT` for mTLS authentication.          |
+| CONSUL_INSECURE_SKIP_VERIFY | If set to `true`, disables TLS certificate verification (not recommended for production). |
+| CONSUL_TOKEN                | Consul ACL token for authenticating requests to the Consul agent or server.               |
+| SERVICE_NAME                | Name used to register the service in Consul.                                              |
+| OTEL_COLLECTOR_GRPC         | Address of the OpenTelemetry Collector for exporting traces via gRPC.                     |
+| OTEL_COLLECTOR_CA_CRT       | Base64 ca.crt of the OpenTelemetry Collector.                                             |
+| OTEL_COLLECTOR_CLIENT_CRT   | Base64 client.crt of the OpenTelemetry Collector.                                         |
+| OTEL_COLLECTOR_CLIENT_KEY   | Base64 client.key of the OpenTelemetry Collector.                                         |
+| OTP_ISSUER                  | Issuer name used when generating OTP codes (used in 2FA systems).                         |
+| JWT_ACCESS_TTL              | Lifetime duration of the access token (e.g., `15m` for 15 minutes).                       |
+| JWT_REFRESH_TTL             | Lifetime duration of the refresh token (e.g., `360h` for 15 days).                        |
+| JWT_ISSUER                  | Issuer name for JWT tokens, typically the service or organization name.                   |
+| POSTGRES_HOST               | Hostname or IP address of the PostgreSQL database server.                                 |
+| POSTGRES_PORT               | Port number on which the PostgreSQL database server is listening.                         |
+| POSTGRES_USER               | Username used to connect to the PostgreSQL database.                                      |
+| POSTGRES_PASSWORD           | Password used to authenticate with the PostgreSQL database.                               |
+| POSTGRES_DB                 | Name of the PostgreSQL database to connect to.                                            |
+| REDIS_HOST                  | Hostname or IP address of the Redis server.                                               |
+| REDIS_PORT                  | Port number on which the Redis server is listening.                                       |
+| REDIS_PASSWORD              | Password used to authenticate with the Redis server.                                      |
+| REDIS_DB                    | Redis database number to use (e.g., `0` is the default).                                  |
+| ADMIN_ROLE_NAME             | Name of the admin role created during initial setup.                                      |
+| ADMIN_EMAIL                 | Email address of the initial admin user.                                                  |
+| ADMIN_PASSWORD              | Password of the initial admin user.                                                       |
 
 ### 6. Run seed
 
