@@ -9,6 +9,7 @@ import (
 	dto "github.com/flash-go/users-service/internal/dto/users"
 	httpUsersHandlerAdapterPort "github.com/flash-go/users-service/internal/port/adapter/handler/users/http"
 	usersServicePort "github.com/flash-go/users-service/internal/port/service/users"
+	"github.com/mssola/useragent"
 )
 
 type Config struct {
@@ -108,7 +109,7 @@ func (a *adapter) AdminFilterRoles(ctx server.ReqCtx) {
 // @Security BearerAuth
 // @Produce plain
 // @Param id path string true "Role ID"
-// @Success 200
+// @Success 204
 // @Failure 400 {string} string "Possible error codes: bad_request:role_not_found, bad_request:role_is_used"
 // @Router /admin/users/roles/{id} [delete]
 func (a *adapter) AdminDeleteRole(ctx server.ReqCtx) {
@@ -122,7 +123,7 @@ func (a *adapter) AdminDeleteRole(ctx server.ReqCtx) {
 	}
 
 	// Write success response
-	ctx.WriteResponse(200, nil)
+	ctx.WriteResponse(204, nil)
 }
 
 // @Summary Update user role (admin)
@@ -132,7 +133,7 @@ func (a *adapter) AdminDeleteRole(ctx server.ReqCtx) {
 // @Produce plain
 // @Param id path string true "Role ID"
 // @Param request body dto.AdminUpdateUserRoleRequest true "Update user role (admin)"
-// @Success 200
+// @Success 204
 // @Failure 400 {string} string "Possible error codes: bad_request, bad_request:role_not_found, bad_request:invalid_role_name, bad_request:role_exist_name"
 // @Router /admin/users/roles/{id} [patch]
 func (a *adapter) AdminUpdateRole(ctx server.ReqCtx) {
@@ -163,7 +164,7 @@ func (a *adapter) AdminUpdateRole(ctx server.ReqCtx) {
 	}
 
 	// Write success response
-	ctx.WriteResponse(200, nil)
+	ctx.WriteResponse(204, nil)
 }
 
 // @Summary Create user (admin)
@@ -268,7 +269,7 @@ func (a *adapter) AdminFilterUsers(ctx server.ReqCtx) {
 // @Security BearerAuth
 // @Produce plain
 // @Param id path string true "User ID"
-// @Success 200
+// @Success 204
 // @Failure 400 {string} string "Possible error codes: bad_request, bad_request:user_not_found, bad_request:user_is_used"
 // @Router /admin/users/{id} [delete]
 func (a *adapter) AdminDeleteUser(ctx server.ReqCtx) {
@@ -289,7 +290,7 @@ func (a *adapter) AdminDeleteUser(ctx server.ReqCtx) {
 	}
 
 	// Write success response
-	ctx.WriteResponse(200, nil)
+	ctx.WriteResponse(204, nil)
 }
 
 // @Summary User profile
@@ -320,6 +321,7 @@ func (a *adapter) GetProfile(ctx server.ReqCtx) {
 			Name:     user.Name,
 			Role:     dto.AdminUserRoleResponse(user.Role),
 			Mfa:      user.Mfa,
+			Device:   ctx.UserValue("device").(string),
 		},
 	)
 }
@@ -412,7 +414,7 @@ func (a *adapter) Auth2faSettings(ctx server.ReqCtx) {
 // @Accept json
 // @Produce plain
 // @Param request body dto.UserAuth2faEnableRequest true "User auth 2FA enable"
-// @Success 200
+// @Success 204
 // @Failure 400 {string} string "Possible error codes: bad_request, bad_request:invalid_token, bad_request:mfa_enabled"
 // @Router /users/auth/2fa/enable [post]
 func (a *adapter) Auth2faEnable(ctx server.ReqCtx) {
@@ -442,7 +444,7 @@ func (a *adapter) Auth2faEnable(ctx server.ReqCtx) {
 	}
 
 	// Write success response
-	ctx.WriteResponse(200, nil)
+	ctx.WriteResponse(204, nil)
 }
 
 // @Summary User auth 2FA disable
@@ -451,7 +453,7 @@ func (a *adapter) Auth2faEnable(ctx server.ReqCtx) {
 // @Accept json
 // @Produce plain
 // @Param request body dto.UserAuth2faDisableRequest true "User auth 2FA disable"
-// @Success 200
+// @Success 204
 // @Failure 400 {string} string "Possible error codes: bad_request, bad_request:invalid_password, bad_request:invalid_token, bad_request:mfa_disabled"
 // @Failure 401 {string} string "Possible error codes: unauthorized:invalid_credentials"
 // @Router /users/auth/2fa/disable [post]
@@ -483,7 +485,7 @@ func (a *adapter) Auth2faDisable(ctx server.ReqCtx) {
 	}
 
 	// Write success response
-	ctx.WriteResponse(200, nil)
+	ctx.WriteResponse(204, nil)
 }
 
 // @Summary User auth
@@ -509,12 +511,39 @@ func (a *adapter) Auth(ctx server.ReqCtx) {
 		return
 	}
 
+	// Parse metadata
+	metadata := dto.UserAuthMetadataRequest{}
+
+	if request.Metadata == nil {
+		metaUserAgent := string(ctx.UserAgent())
+		ua := useragent.New(metaUserAgent)
+		metaBrowserName, metaBrowserVersion := ua.Browser()
+		metaEngineName, metaEngineVersion := ua.Engine()
+		metaOsInfo := ua.OSInfo()
+
+		metadata.Location = ""
+		metadata.Ip = ctx.GetIpAddr()
+		metadata.UserAgent = metaUserAgent
+		metadata.OsFullName = metaOsInfo.FullName
+		metadata.OsName = metaOsInfo.Name
+		metadata.OsVersion = metaOsInfo.Version
+		metadata.Platform = ua.Platform()
+		metadata.Model = ua.Model()
+		metadata.BrowserName = metaBrowserName
+		metadata.BrowserVersion = metaBrowserVersion
+		metadata.EngineName = metaEngineName
+		metadata.EngineVersion = metaEngineVersion
+	} else {
+		metadata = *request.Metadata
+	}
+
 	// Auth
 	result, err := a.usersService.Auth(
 		ctx.Context(),
 		&usersServicePort.UserAuthData{
 			Login:    request.Login,
 			Password: request.Password,
+			Meta:     usersServicePort.UserAuthMetaData(metadata),
 		},
 	)
 	if err != nil {
@@ -552,7 +581,7 @@ func (a *adapter) AuthTokenRenew(ctx server.ReqCtx) {
 	data := usersServicePort.UserAuthTokenRenewData(request)
 
 	// Auth
-	result, err := a.usersService.AuthTokenRenew(
+	result, err := a.usersService.TokenRenew(
 		ctx.Context(),
 		&data,
 	)
@@ -592,7 +621,7 @@ func (a *adapter) AuthTokenValidate(ctx server.ReqCtx) {
 	data := usersServicePort.UserAuthTokenValidateData(request)
 
 	// Validate access token
-	result, err := a.usersService.AuthTokenValidate(
+	result, err := a.usersService.TokenValidate(
 		ctx.Context(),
 		&data,
 	)
@@ -603,6 +632,121 @@ func (a *adapter) AuthTokenValidate(ctx server.ReqCtx) {
 
 	// Write success response
 	ctx.WriteResponse(200, dto.UserTokenValidateResponse(*result))
+}
+
+// @Summary Logout current device
+// @Tags auth
+// @Security BearerAuth
+// @Success 204
+// @Router /users/auth/logout [post]
+func (a *adapter) AuthLogout(ctx server.ReqCtx) {
+	// Logout current device
+	if err := a.usersService.LogoutDevice(
+		ctx.Context(),
+		&usersServicePort.UserAuthLogoutDeviceData{
+			User:   ctx.UserValue("user").(uint),
+			Device: ctx.UserValue("device").(string),
+		},
+	); err != nil {
+		ctx.WriteErrorResponse(err)
+		return
+	}
+
+	// Write success response
+	ctx.WriteResponse(204, nil)
+}
+
+// @Summary Logout all devices
+// @Tags auth
+// @Security BearerAuth
+// @Success 204
+// @Router /users/auth/logout/all [post]
+func (a *adapter) AuthLogoutAll(ctx server.ReqCtx) {
+	// Logout all device
+	if err := a.usersService.LogoutAll(
+		ctx.Context(),
+		&usersServicePort.UserAuthLogoutAllData{
+			User: ctx.UserValue("user").(uint),
+		},
+	); err != nil {
+		ctx.WriteErrorResponse(err)
+		return
+	}
+
+	// Write success response
+	ctx.WriteResponse(204, nil)
+}
+
+// @Summary Logout target device
+// @Tags auth
+// @Security BearerAuth
+// @Accept json
+// @Produce plain
+// @Param request body dto.UserAuthLogoutDeviceRequest true "Target device"
+// @Success 204
+// @Failure 400 {string} string "Possible error codes: bad_request, bad_request:invalid_device"
+// @Router /users/auth/logout/device [post]
+func (a *adapter) AuthLogoutDevice(ctx server.ReqCtx) {
+	// Parse request json body
+	var request dto.UserAuthLogoutDeviceRequest
+	if err := ctx.ReadJson(&request); err != nil {
+		ctx.WriteErrorResponse(errors.ErrBadRequest)
+		return
+	}
+
+	// Validate request
+	if err := request.Validate(); err != nil {
+		ctx.WriteErrorResponse(err)
+		return
+	}
+
+	// Logout target device
+	if err := a.usersService.LogoutDevice(
+		ctx.Context(),
+		&usersServicePort.UserAuthLogoutDeviceData{
+			User:   ctx.UserValue("user").(uint),
+			Device: request.Device,
+		},
+	); err != nil {
+		ctx.WriteErrorResponse(err)
+		return
+	}
+
+	// Write success response
+	ctx.WriteResponse(204, nil)
+}
+
+// @Summary Active devices
+// @Tags auth
+// @Security BearerAuth
+// @Produce json
+// @Success 200 {array} dto.UserAuthDeviceResponse
+// @Router /users/auth/devices [get]
+func (a *adapter) AuthDevices(ctx server.ReqCtx) {
+	// Get devices
+	serviceDevices, err := a.usersService.GetActiveDevices(
+		ctx.Context(),
+		ctx.UserValue("user").(uint),
+	)
+	if err != nil {
+		ctx.WriteErrorResponse(err)
+		return
+	}
+
+	// Map service to adapter devices
+	adapterDevices := make([]dto.UserAuthDeviceResponse, 0, len(serviceDevices))
+	for _, device := range serviceDevices {
+		adapterDevices = append(
+			adapterDevices,
+			dto.UserAuthDeviceResponse{
+				Id:      device.Id,
+				Session: dto.UserAuthSessionResponse(device.Session),
+			},
+		)
+	}
+
+	// Write success response
+	ctx.WriteResponse(200, adapterDevices)
 }
 
 // Middlewares
@@ -618,7 +762,7 @@ func (a *adapter) AuthMiddleware(options ...httpUsersHandlerAdapterPort.AuthOpti
 			}
 
 			// Parse and validate access token
-			result, err := a.usersService.AuthTokenValidate(
+			result, err := a.usersService.TokenValidate(
 				ctx.Context(),
 				&usersServicePort.UserAuthTokenValidateData{
 					AccessToken: token,
@@ -630,6 +774,7 @@ func (a *adapter) AuthMiddleware(options ...httpUsersHandlerAdapterPort.AuthOpti
 			}
 
 			// Set data to ctx
+			ctx.SetUserValue("device", result.Device)
 			ctx.SetUserValue("user", result.User)
 			ctx.SetUserValue("role", result.Role)
 			ctx.SetUserValue("mfa_value", result.Mfa)

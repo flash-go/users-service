@@ -172,8 +172,24 @@ func (r *UserAuth2faDisableRequest) Validate() error {
 }
 
 type UserAuthRequest struct {
-	Login    string `json:"login"`
-	Password string `json:"password"`
+	Login    string                   `json:"login"`
+	Password string                   `json:"password"`
+	Metadata *UserAuthMetadataRequest `json:"metadata"`
+}
+
+type UserAuthMetadataRequest struct {
+	Location       string `json:"location"`
+	Ip             string `json:"ip"`
+	UserAgent      string `json:"user_agent"`
+	OsFullName     string `json:"os_full_name"`
+	OsName         string `json:"os_name"`
+	OsVersion      string `json:"os_version"`
+	Platform       string `json:"platform"`
+	Model          string `json:"model"`
+	BrowserName    string `json:"browser_name"`
+	BrowserVersion string `json:"browser_version"`
+	EngineName     string `json:"engine_name"`
+	EngineVersion  string `json:"engine_version"`
 }
 
 func (r *UserAuthRequest) Validate() error {
@@ -204,6 +220,17 @@ type UserTokenValidateRequest struct {
 func (r *UserTokenValidateRequest) Validate() error {
 	if r.AccessToken == "" {
 		return ErrUserAuthInvalidToken
+	}
+	return nil
+}
+
+type UserAuthLogoutDeviceRequest struct {
+	Device string `json:"device"`
+}
+
+func (r *UserAuthLogoutDeviceRequest) Validate() error {
+	if r.Device == "" {
+		return ErrUserInvalidDevice
 	}
 	return nil
 }

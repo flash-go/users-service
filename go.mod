@@ -3,13 +3,14 @@ module github.com/flash-go/users-service
 go 1.24.0
 
 require (
-	github.com/flash-go/flash v1.0.0-rc11
-	github.com/flash-go/sdk v1.0.0-rc6
+	github.com/flash-go/flash v1.0.0-rc12
+	github.com/flash-go/sdk v1.0.0-rc7
 	github.com/go-gormigrate/gormigrate/v2 v2.1.4
 	github.com/golang-jwt/jwt/v5 v5.2.3
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.6.0
 	github.com/joho/godotenv v1.5.1
+	github.com/mssola/useragent v1.0.0
 	github.com/pquerna/otp v1.4.0
 	github.com/redis/go-redis/v9 v9.11.0
 	github.com/swaggo/swag v1.16.4

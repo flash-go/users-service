@@ -7,7 +7,12 @@ Microservice written in Go for managing authorization and authentication of user
 - Support for user and role management.
 - JWT token support 
     - Support for access and refresh tokens using HS512 (HMAC-SHA-512).
-    - Refresh token invalidation based on JTI + Redis.
+    - Flexible session management across different devices via Redis.
+        - Saving detailed session information on each device.
+        - List of devices with active sessions.
+        - Logout from current device.
+        - Logout from specific device.
+        - Logout from all devices.
     - Protection against algorithm substitution attacks (e.g., none or RS256).
     - Validation of standard claims and time-skew compensation.
     - Configurable TTL for access and refresh tokens.

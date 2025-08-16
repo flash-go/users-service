@@ -23,12 +23,17 @@ type Interface interface {
 	Auth(ctx server.ReqCtx)
 	AuthTokenRenew(ctx server.ReqCtx)
 	AuthTokenValidate(ctx server.ReqCtx)
+	AuthLogout(ctx server.ReqCtx)
+	AuthLogoutAll(ctx server.ReqCtx)
+	AuthLogoutDevice(ctx server.ReqCtx)
+	AuthDevices(ctx server.ReqCtx)
 	// Middlewares
 	AuthMiddleware(options ...AuthOption) func(server.ReqHandler) server.ReqHandler
 }
 
 type TokenValidateResult struct {
 	Id       string
+	Device   string
 	User     uint
 	Role     string
 	Mfa      bool

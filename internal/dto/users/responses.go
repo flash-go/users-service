@@ -17,6 +17,7 @@ type AdminUserResponse struct {
 	Name     string                `json:"name"`
 	Role     AdminUserRoleResponse `json:"role"`
 	Mfa      bool                  `json:"mfa"`
+	Device   string                `json:"device"`
 }
 type UserAuth2faValidateResponse struct {
 	Access  string `json:"access_token"`
@@ -33,6 +34,7 @@ type UserAuthResponse struct {
 }
 type UserTokenValidateResponse struct {
 	Id       string   `json:"id"`
+	Device   string   `json:"device"`
 	User     uint     `json:"user"`
 	Role     string   `json:"role"`
 	Mfa      bool     `json:"mfa"`
@@ -40,4 +42,23 @@ type UserTokenValidateResponse struct {
 	Issued   int64    `json:"issued"`
 	Issuer   string   `json:"issuer"`
 	Audience []string `json:"audience"`
+}
+type UserAuthDeviceResponse struct {
+	Id      string                  `json:"id"`
+	Session UserAuthSessionResponse `json:"session"`
+}
+type UserAuthSessionResponse struct {
+	IssuedAt       string `json:"issued_at"`
+	Location       string `json:"location"`
+	Ip             string `json:"ip"`
+	UserAgent      string `json:"user_agent"`
+	OsFullName     string `json:"os_full_name"`
+	OsName         string `json:"os_name"`
+	OsVersion      string `json:"os_version"`
+	Platform       string `json:"platform"`
+	Model          string `json:"model"`
+	BrowserName    string `json:"browser_name"`
+	BrowserVersion string `json:"browser_version"`
+	EngineName     string `json:"engine_name"`
+	EngineVersion  string `json:"engine_version"`
 }

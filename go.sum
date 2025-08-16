@@ -53,10 +53,10 @@ github.com/fasthttp/router v1.5.4/go.mod h1:3/hysWq6cky7dTfzaaEPZGdptwjwx0qzTgFC
 github.com/fatih/color v1.13.0/go.mod h1:kLAiJbzzSOZDVNGyDpeOxJ47H46qBXwg5ILebYFFOfk=
 github.com/fatih/color v1.18.0 h1:S8gINlzdQ840/4pfAwic/ZE0djQEH3wM94VfqLTZcOM=
 github.com/fatih/color v1.18.0/go.mod h1:4FelSpRwEGDpQ12mAdzqdOukCy4u8WUtOY6lkT/6HfU=
-github.com/flash-go/flash v1.0.0-rc11 h1:rCcv17WMR1oDrE3zTihCbj4wnOAhkd/AK/Ze8+pDJGo=
-github.com/flash-go/flash v1.0.0-rc11/go.mod h1:4/4CNQ6j0KGzYGJz0e1xN0leS9gvScg0XMMshVGNFRw=
-github.com/flash-go/sdk v1.0.0-rc6 h1:8HY8hkwQMLDj6nDrpDkOR5C/pRkciqFFDKbxDACs2k4=
-github.com/flash-go/sdk v1.0.0-rc6/go.mod h1:YPlWM2vD/pZOLirCxK3Gtt65Z2nVDXBaL/3A2/nSc0U=
+github.com/flash-go/flash v1.0.0-rc12 h1:j6onBdOlHdPxm9dVLsC3zC914m7uJ57Ck89j+oEHkuM=
+github.com/flash-go/flash v1.0.0-rc12/go.mod h1:4/4CNQ6j0KGzYGJz0e1xN0leS9gvScg0XMMshVGNFRw=
+github.com/flash-go/sdk v1.0.0-rc7 h1:XE4xLAKrTrXvJpI42l6IwMSY7mL+J9VZskSwl/HNcr8=
+github.com/flash-go/sdk v1.0.0-rc7/go.mod h1:+2cQzysfnxenJH4see+VqnI3d7i7/gutddc9XsVY3MM=
 github.com/go-faster/city v1.0.1 h1:4WAxSZ3V2Ws4QRDrscLEDcibJY8uf41H6AhXDrNDcGw=
 github.com/go-faster/city v1.0.1/go.mod h1:jKcUJId49qdW3L1qKHH/3wPeUstCVpVSXTM6vO3VcTw=
 github.com/go-faster/errors v0.7.1 h1:MkJTnDoEdi9pDabt1dpWf7AA8/BaSYZqibYyhZ20AYg=
@@ -229,6 +229,8 @@ github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd/go.mod h1:6dJ
 github.com/modern-go/reflect2 v0.0.0-20180701023420-4b7aa43c6742/go.mod h1:bx2lNnkwVCuqBIxFjflWJWanXIb3RllmbCylyMrvgv0=
 github.com/modern-go/reflect2 v1.0.1/go.mod h1:bx2lNnkwVCuqBIxFjflWJWanXIb3RllmbCylyMrvgv0=
 github.com/montanaflynn/stats v0.0.0-20171201202039-1bf9dbcd8cbe/go.mod h1:wL8QJuTMNUDYhXwkmfOly8iTdp5TEcJFWZD2D7SIkUc=
+github.com/mssola/useragent v1.0.0 h1:WRlDpXyxHDNfvZaPEut5Biveq86Ze4o4EMffyMxmH5o=
+github.com/mssola/useragent v1.0.0/go.mod h1:hz9Cqz4RXusgg1EdI4Al0INR62kP7aPSRNHnpU+b85Y=
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 h1:C3w9PqII01/Oq1c1nUAm88MOHcQC9l5mIlSMApZMrHA=
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822/go.mod h1:+n7T8mK8HuQTcFwEeznm/DIxMOiR9yIdICNftLE1DvQ=
 github.com/mwitkow/go-conntrack v0.0.0-20161129095857-cc309e4a2223/go.mod h1:qRWi+5nqEBWmkhHvq77mSJWrCKwh8bxhgT7d/eI7P4U=

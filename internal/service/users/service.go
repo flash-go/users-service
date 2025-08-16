@@ -12,6 +12,7 @@ import (
 	jwtServicePort "github.com/flash-go/users-service/internal/port/service/jwt"
 	otpServicePort "github.com/flash-go/users-service/internal/port/service/otp"
 	usersServicePort "github.com/flash-go/users-service/internal/port/service/users"
+	"github.com/google/uuid"
 )
 
 type Config struct {
@@ -306,16 +307,51 @@ func (s *service) Auth(ctx context.Context, data *usersServicePort.UserAuthData)
 		return nil, err
 	}
 
+	// Create device
+	device := uuid.NewString()
+
 	// Create tokens
 	tokens, err := s.jwtService.NewTokens(
 		ctx,
 		jwtServicePort.NewJwtTokenData{
-			User: user.Id,
-			Role: user.Role.Id,
-			Mfa:  user.Mfa,
+			User:   user.Id,
+			Role:   user.Role.Id,
+			Mfa:    user.Mfa,
+			Device: device,
 		},
 	)
 	if err != nil {
+		return nil, err
+	}
+
+	// Parse refresh token
+	refreshToken, err := s.jwtService.ParseRefreshToken(tokens.Refresh)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create session
+	if err := s.jwtService.NewSession(
+		ctx,
+		user.Id,
+		device,
+		jwtServicePort.Session{
+			Jti:            refreshToken.Id,
+			IssuedAt:       time.Now().Format(time.RFC3339),
+			Location:       data.Meta.Location,
+			Ip:             data.Meta.Ip,
+			UserAgent:      data.Meta.UserAgent,
+			OsFullName:     data.Meta.OsFullName,
+			OsName:         data.Meta.OsName,
+			OsVersion:      data.Meta.OsVersion,
+			Platform:       data.Meta.Platform,
+			Model:          data.Meta.Model,
+			BrowserName:    data.Meta.BrowserName,
+			BrowserVersion: data.Meta.BrowserVersion,
+			EngineName:     data.Meta.EngineName,
+			EngineVersion:  data.Meta.EngineVersion,
+		},
+	); err != nil {
 		return nil, err
 	}
 
@@ -327,21 +363,26 @@ func (s *service) Auth(ctx context.Context, data *usersServicePort.UserAuthData)
 	}, nil
 }
 
-func (s *service) AuthTokenRenew(ctx context.Context, data *usersServicePort.UserAuthTokenRenewData) (*usersServicePort.UserAuthResult, error) {
+func (s *service) TokenRenew(ctx context.Context, data *usersServicePort.UserAuthTokenRenewData) (*usersServicePort.UserAuthResult, error) {
 	// Parse refresh token
 	token, err := s.jwtService.ParseRefreshToken(data.RefreshToken)
 	if err != nil {
 		return nil, err
 	}
 
-	// Get refresh token JTI by user id
-	jti, err := s.jwtService.GetRefreshTokenJtiFromCache(ctx, token.User)
+	// Get session
+	session, err := s.jwtService.GetSession(ctx, token.User, token.Device)
 	if err != nil {
 		return nil, err
 	}
 
-	// Check already used token
-	if *jti != token.Id {
+	// Check session exist
+	if session == nil {
+		return nil, usersServicePort.ErrAuthRefreshTokenAlreadyUsed
+	}
+
+	// Check refresh token jti
+	if session.Jti != token.Id {
 		return nil, usersServicePort.ErrAuthRefreshTokenAlreadyUsed
 	}
 
@@ -355,12 +396,24 @@ func (s *service) AuthTokenRenew(ctx context.Context, data *usersServicePort.Use
 	tokens, err := s.jwtService.NewTokens(
 		ctx,
 		jwtServicePort.NewJwtTokenData{
-			User: user.Id,
-			Role: user.Role.Id,
-			Mfa:  token.Mfa,
+			User:   user.Id,
+			Role:   user.Role.Id,
+			Mfa:    token.Mfa,
+			Device: token.Device,
 		},
 	)
 	if err != nil {
+		return nil, err
+	}
+
+	// Parse refresh token
+	refreshToken, err := s.jwtService.ParseRefreshToken(tokens.Refresh)
+	if err != nil {
+		return nil, err
+	}
+
+	// Update session
+	if err := s.jwtService.UpdateSession(ctx, user.Id, token.Device, refreshToken.Id); err != nil {
 		return nil, err
 	}
 
@@ -372,7 +425,7 @@ func (s *service) AuthTokenRenew(ctx context.Context, data *usersServicePort.Use
 	}, nil
 }
 
-func (s *service) AuthTokenValidate(ctx context.Context, data *usersServicePort.UserAuthTokenValidateData) (*usersServicePort.UserAuthTokenValidateResult, error) {
+func (s *service) TokenValidate(ctx context.Context, data *usersServicePort.UserAuthTokenValidateData) (*usersServicePort.UserAuthTokenValidateResult, error) {
 	// Parse and validate access token
 	t, err := s.jwtService.ParseAccessToken(data.AccessToken)
 	if err != nil {
@@ -381,4 +434,61 @@ func (s *service) AuthTokenValidate(ctx context.Context, data *usersServicePort.
 
 	result := usersServicePort.UserAuthTokenValidateResult(*t)
 	return &result, nil
+}
+
+func (s *service) LogoutDevice(ctx context.Context, data *usersServicePort.UserAuthLogoutDeviceData) error {
+	return s.jwtService.DeleteSession(ctx, data.User, data.Device)
+}
+
+func (s *service) LogoutAll(ctx context.Context, data *usersServicePort.UserAuthLogoutAllData) error {
+	// Get active devices
+	devices, err := s.jwtService.GetActiveDevices(ctx, data.User)
+	if err != nil {
+		return err
+	}
+
+	// Delete active devices
+	for _, device := range devices {
+		if err := s.jwtService.DeleteSession(ctx, data.User, device.Id); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (s *service) GetActiveDevices(ctx context.Context, user uint) ([]usersServicePort.Device, error) {
+	// Get active devices
+	jwtDevices, err := s.jwtService.GetActiveDevices(ctx, user)
+	if err != nil {
+		return nil, err
+	}
+
+	// Map jwt to users devices
+	usersDevices := make([]usersServicePort.Device, 0, len(jwtDevices))
+	for _, device := range jwtDevices {
+		usersDevices = append(
+			usersDevices,
+			usersServicePort.Device{
+				Id: device.Id,
+				Session: usersServicePort.Session{
+					IssuedAt:       device.Session.IssuedAt,
+					Location:       device.Session.Location,
+					Ip:             device.Session.Ip,
+					UserAgent:      device.Session.UserAgent,
+					OsFullName:     device.Session.OsFullName,
+					OsName:         device.Session.OsName,
+					OsVersion:      device.Session.OsVersion,
+					Platform:       device.Session.Platform,
+					Model:          device.Session.Model,
+					BrowserName:    device.Session.BrowserName,
+					BrowserVersion: device.Session.BrowserVersion,
+					EngineName:     device.Session.EngineName,
+					EngineVersion:  device.Session.EngineVersion,
+				},
+			},
+		)
+	}
+
+	return usersDevices, nil
 }

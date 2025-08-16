@@ -13,8 +13,9 @@ import (
 )
 
 type jwtTokenClaims struct {
-	Role string `json:"role"`
-	Mfa  bool   `json:"mfa"`
+	Device string `json:"device"`
+	Role   string `json:"role"`
+	Mfa    bool   `json:"mfa"`
 	jwt.RegisteredClaims
 }
 
@@ -72,32 +73,79 @@ func (s *service) NewAccessToken(ctx context.Context, data jwtServicePort.NewJwt
 }
 
 func (s *service) NewRefreshToken(ctx context.Context, data jwtServicePort.NewJwtTokenData) (*string, error) {
-	// Create token
-	token, claims, err := s.newToken(data, s.jwtRefreshKey, s.jwtRefreshExpire)
-	if err != nil {
-		return nil, err
-	}
-
-	// Parse refresh token TTL
-	ttl, err := time.ParseDuration(s.jwtRefreshExpire)
-	if err != nil {
-		return nil, err
-	}
-
-	// Set refresh token JTI to cache
-	if err := s.jwtRepository.SetRefreshTokenJtiToCache(ctx, data.User, claims.ID, ttl); err != nil {
-		return nil, err
-	}
-
+	token, _, err := s.newToken(data, s.jwtRefreshKey, s.jwtRefreshExpire)
 	return token, err
 }
 
-func (s *service) GetAccessTokenDuration() (time.Duration, error) {
-	return time.ParseDuration(s.jwtAccessExpire)
+func (s *service) NewSession(ctx context.Context, user uint, device string, session jwtServicePort.Session) error {
+	// Parse refresh token TTL
+	ttl, err := time.ParseDuration(s.jwtRefreshExpire)
+	if err != nil {
+		return err
+	}
+
+	// New session
+	if err := s.jwtRepository.NewSession(
+		ctx,
+		user,
+		device,
+		jwtRepositoryAdapterPort.Session(session),
+		ttl,
+	); err != nil {
+		return err
+	}
+
+	return nil
 }
 
-func (s *service) GetRefreshTokenDuration() (time.Duration, error) {
-	return time.ParseDuration(s.jwtRefreshExpire)
+func (s *service) GetSession(ctx context.Context, user uint, device string) (*jwtServicePort.Session, error) {
+	// Get session
+	repositorySession, err := s.jwtRepository.GetSession(ctx, user, device)
+	if err != nil {
+		return nil, err
+	}
+	if repositorySession == nil {
+		return nil, nil
+	}
+
+	serviceSession := jwtServicePort.Session(*repositorySession)
+	return &serviceSession, nil
+}
+
+func (s *service) UpdateSession(ctx context.Context, user uint, device, jti string) error {
+	// Parse refresh token TTL
+	ttl, err := time.ParseDuration(s.jwtRefreshExpire)
+	if err != nil {
+		return err
+	}
+
+	return s.jwtRepository.UpdateSession(ctx, user, device, jti, ttl)
+}
+
+func (s *service) DeleteSession(ctx context.Context, user uint, device string) error {
+	return s.jwtRepository.DeleteSession(ctx, user, device)
+}
+
+func (s *service) GetActiveDevices(ctx context.Context, user uint) ([]jwtServicePort.Device, error) {
+	// Get active devices
+	repositoryDevices, err := s.jwtRepository.GetActiveDevices(ctx, user)
+	if err != nil {
+		return nil, err
+	}
+
+	// Map repository to service devices
+	serviceDevices := make([]jwtServicePort.Device, 0, len(repositoryDevices))
+	for _, device := range repositoryDevices {
+		serviceDevices = append(
+			serviceDevices,
+			jwtServicePort.Device{
+				Id:      device.Id,
+				Session: jwtServicePort.Session(device.Session),
+			},
+		)
+	}
+
+	return serviceDevices, nil
 }
 
 func (s *service) ParseAccessToken(token string) (*jwtServicePort.ParseJwtTokenResult, error) {
@@ -106,14 +154,6 @@ func (s *service) ParseAccessToken(token string) (*jwtServicePort.ParseJwtTokenR
 
 func (s *service) ParseRefreshToken(token string) (*jwtServicePort.ParseJwtTokenResult, error) {
 	return s.parseToken(token, s.jwtRefreshKey)
-}
-
-func (s *service) SetRefreshTokenJtiToCache(ctx context.Context, user uint, jti string, ttl time.Duration) error {
-	return s.jwtRepository.SetRefreshTokenJtiToCache(ctx, user, jti, ttl)
-}
-
-func (s *service) GetRefreshTokenJtiFromCache(ctx context.Context, user uint) (*string, error) {
-	return s.jwtRepository.GetRefreshTokenJtiFromCache(ctx, user)
 }
 
 func (s *service) newToken(data jwtServicePort.NewJwtTokenData, key, expire string) (*string, *jwtTokenClaims, error) {
@@ -134,8 +174,9 @@ func (s *service) newToken(data jwtServicePort.NewJwtTokenData, key, expire stri
 
 	// Create claims
 	claims := &jwtTokenClaims{
-		Role: data.Role,
-		Mfa:  data.Mfa,
+		Device: data.Device,
+		Role:   data.Role,
+		Mfa:    data.Mfa,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ID:        jti,
 			Subject:   strconv.FormatUint(uint64(data.User), 10),
@@ -199,6 +240,7 @@ func (s *service) parseToken(token string, key string) (*jwtServicePort.ParseJwt
 
 	return &jwtServicePort.ParseJwtTokenResult{
 		Id:       claims.ID,
+		Device:   claims.Device,
 		User:     uint(user),
 		Role:     claims.Role,
 		Mfa:      claims.Mfa,

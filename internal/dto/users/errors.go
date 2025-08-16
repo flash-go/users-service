@@ -15,4 +15,5 @@ var (
 	ErrUserAuth2faInvalidToken    = errors.New(errors.ErrBadRequest, "invalid_token")
 	ErrUserAuth2faInvalidPassword = errors.New(errors.ErrBadRequest, "invalid_password")
 	ErrUserAuthInvalidToken       = errors.New(errors.ErrBadRequest, "invalid_token")
+	ErrUserInvalidDevice          = errors.New(errors.ErrBadRequest, "invalid_device")
 )

@@ -4,6 +4,8 @@ definitions:
     properties:
       email:
         type: string
+      name:
+        type: string
       password:
         type: string
       role:
@@ -57,12 +59,16 @@ definitions:
     properties:
       created:
         type: string
+      device:
+        type: string
       email:
         type: string
       id:
         type: integer
       mfa:
         type: boolean
+      name:
+        type: string
       role:
         $ref: '#/definitions/dto.AdminUserRoleResponse'
       username:
@@ -113,10 +119,51 @@ definitions:
       refresh_token:
         type: string
     type: object
+  dto.UserAuthDeviceResponse:
+    properties:
+      id:
+        type: string
+      session:
+        $ref: '#/definitions/dto.UserAuthSessionResponse'
+    type: object
+  dto.UserAuthLogoutDeviceRequest:
+    properties:
+      device:
+        type: string
+    type: object
+  dto.UserAuthMetadataRequest:
+    properties:
+      browser_name:
+        type: string
+      browser_version:
+        type: string
+      engine_name:
+        type: string
+      engine_version:
+        type: string
+      ip:
+        type: string
+      location:
+        type: string
+      model:
+        type: string
+      os_full_name:
+        type: string
+      os_name:
+        type: string
+      os_version:
+        type: string
+      platform:
+        type: string
+      user_agent:
+        type: string
+    type: object
   dto.UserAuthRequest:
     properties:
       login:
         type: string
+      metadata:
+        $ref: '#/definitions/dto.UserAuthMetadataRequest'
       password:
         type: string
     type: object
@@ -127,6 +174,35 @@ definitions:
       mfa_required:
         type: boolean
       refresh_token:
+        type: string
+    type: object
+  dto.UserAuthSessionResponse:
+    properties:
+      browser_name:
+        type: string
+      browser_version:
+        type: string
+      engine_name:
+        type: string
+      engine_version:
+        type: string
+      ip:
+        type: string
+      issued_at:
+        type: string
+      location:
+        type: string
+      model:
+        type: string
+      os_full_name:
+        type: string
+      os_name:
+        type: string
+      os_version:
+        type: string
+      platform:
+        type: string
+      user_agent:
         type: string
     type: object
   dto.UserTokenRenewRequest:
@@ -145,6 +221,8 @@ definitions:
         items:
           type: string
         type: array
+      device:
+        type: string
       expires:
         type: integer
       id:
@@ -185,9 +263,9 @@ paths:
           schema:
             $ref: '#/definitions/dto.AdminUserResponse'
         "400":
-          description: 'Possible error codes: bad_request, bad_request:invalid_username,
-            bad_request:invalid_email, bad_request:invalid_password, bad_request:user_exist_email,
-            bad_request:user_exist_username, bad_request:role_not_found'
+          description: 'Possible error codes: bad_request, bad_request:invalid_name,
+            bad_request:invalid_username, bad_request:invalid_email, bad_request:invalid_password,
+            bad_request:user_exist_email, bad_request:user_exist_username, bad_request:role_not_found'
           schema:
             type: string
       security:
@@ -206,8 +284,8 @@ paths:
       produces:
       - text/plain
       responses:
-        "200":
-          description: OK
+        "204":
+          description: No Content
         "400":
           description: 'Possible error codes: bad_request, bad_request:user_not_found,
             bad_request:user_is_used'
@@ -281,8 +359,8 @@ paths:
       produces:
       - text/plain
       responses:
-        "200":
-          description: OK
+        "204":
+          description: No Content
         "400":
           description: 'Possible error codes: bad_request:role_not_found, bad_request:role_is_used'
           schema:
@@ -310,8 +388,8 @@ paths:
       produces:
       - text/plain
       responses:
-        "200":
-          description: OK
+        "204":
+          description: No Content
         "400":
           description: 'Possible error codes: bad_request, bad_request:role_not_found,
             bad_request:invalid_role_name, bad_request:role_exist_name'
@@ -390,8 +468,8 @@ paths:
       produces:
       - text/plain
       responses:
-        "200":
-          description: OK
+        "204":
+          description: No Content
         "400":
           description: 'Possible error codes: bad_request, bad_request:invalid_password,
             bad_request:invalid_token, bad_request:mfa_disabled'
@@ -420,8 +498,8 @@ paths:
       produces:
       - text/plain
       responses:
-        "200":
-          description: OK
+        "204":
+          description: No Content
         "400":
           description: 'Possible error codes: bad_request, bad_request:invalid_token,
             bad_request:mfa_enabled'
@@ -492,6 +570,67 @@ paths:
       security:
       - BearerAuth: []
       summary: User auth 2FA validate
+      tags:
+      - auth
+  /users/auth/devices:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.UserAuthDeviceResponse'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Active devices
+      tags:
+      - auth
+  /users/auth/logout:
+    post:
+      responses:
+        "204":
+          description: No Content
+      security:
+      - BearerAuth: []
+      summary: Logout current device
+      tags:
+      - auth
+  /users/auth/logout/all:
+    post:
+      responses:
+        "204":
+          description: No Content
+      security:
+      - BearerAuth: []
+      summary: Logout all devices
+      tags:
+      - auth
+  /users/auth/logout/device:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Target device
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UserAuthLogoutDeviceRequest'
+      produces:
+      - text/plain
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: 'Possible error codes: bad_request, bad_request:invalid_device'
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Logout target device
       tags:
       - auth
   /users/auth/token/renew:

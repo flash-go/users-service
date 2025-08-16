@@ -4,6 +4,10 @@ import (
 	"os"
 
 	// SDK
+	//
+	// A high-level software development toolkit based on the Flash Framework
+	// for building highly efficient and fault-tolerant applications.
+	
 	"github.com/flash-go/sdk/config"
 	"github.com/flash-go/sdk/infra"
 	"github.com/flash-go/sdk/state"

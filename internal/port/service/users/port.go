@@ -23,8 +23,11 @@ type Interface interface {
 	Auth2faEnable(ctx context.Context, data *UserAuth2faEnableData) error
 	Auth2faDisable(ctx context.Context, data *UserAuth2faDisableData) error
 	Auth(ctx context.Context, data *UserAuthData) (*UserAuthResult, error)
-	AuthTokenRenew(ctx context.Context, data *UserAuthTokenRenewData) (*UserAuthResult, error)
-	AuthTokenValidate(ctx context.Context, data *UserAuthTokenValidateData) (*UserAuthTokenValidateResult, error)
+	TokenRenew(ctx context.Context, data *UserAuthTokenRenewData) (*UserAuthResult, error)
+	TokenValidate(ctx context.Context, data *UserAuthTokenValidateData) (*UserAuthTokenValidateResult, error)
+	LogoutDevice(ctx context.Context, data *UserAuthLogoutDeviceData) error
+	LogoutAll(ctx context.Context, data *UserAuthLogoutAllData) error
+	GetActiveDevices(ctx context.Context, user uint) ([]Device, error)
 }
 
 // Args
@@ -73,12 +76,34 @@ type UserAuth2faDisableData struct {
 type UserAuthData struct {
 	Login    string
 	Password string
+	Meta     UserAuthMetaData
+}
+type UserAuthMetaData struct {
+	Location       string
+	Ip             string
+	UserAgent      string
+	OsFullName     string
+	OsName         string
+	OsVersion      string
+	Platform       string
+	Model          string
+	BrowserName    string
+	BrowserVersion string
+	EngineName     string
+	EngineVersion  string
 }
 type UserAuthTokenRenewData struct {
 	RefreshToken string
 }
 type UserAuthTokenValidateData struct {
 	AccessToken string
+}
+type UserAuthLogoutDeviceData struct {
+	User   uint
+	Device string
+}
+type UserAuthLogoutAllData struct {
+	User uint
 }
 
 // Results
@@ -98,6 +123,7 @@ type UserAuthResult struct {
 }
 type UserAuthTokenValidateResult struct {
 	Id       string
+	Device   string
 	User     uint
 	Role     string
 	Mfa      bool
@@ -105,4 +131,23 @@ type UserAuthTokenValidateResult struct {
 	Issued   int64
 	Issuer   string
 	Audience []string
+}
+type Session struct {
+	IssuedAt       string
+	Location       string
+	Ip             string
+	UserAgent      string
+	OsFullName     string
+	OsName         string
+	OsVersion      string
+	Platform       string
+	Model          string
+	BrowserName    string
+	BrowserVersion string
+	EngineName     string
+	EngineVersion  string
+}
+type Device struct {
+	Id      string
+	Session Session
 }

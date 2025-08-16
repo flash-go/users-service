@@ -52,7 +52,7 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Possible error codes: bad_request, bad_request:invalid_username, bad_request:invalid_email, bad_request:invalid_password, bad_request:user_exist_email, bad_request:user_exist_username, bad_request:role_not_found",
+                        "description": "Possible error codes: bad_request, bad_request:invalid_name, bad_request:invalid_username, bad_request:invalid_email, bad_request:invalid_password, bad_request:user_exist_email, bad_request:user_exist_username, bad_request:role_not_found",
                         "schema": {
                             "type": "string"
                         }
@@ -205,8 +205,8 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK"
+                    "204": {
+                        "description": "No Content"
                     },
                     "400": {
                         "description": "Possible error codes: bad_request:role_not_found, bad_request:role_is_used",
@@ -251,8 +251,8 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK"
+                    "204": {
+                        "description": "No Content"
                     },
                     "400": {
                         "description": "Possible error codes: bad_request, bad_request:role_not_found, bad_request:invalid_role_name, bad_request:role_exist_name",
@@ -287,8 +287,8 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK"
+                    "204": {
+                        "description": "No Content"
                     },
                     "400": {
                         "description": "Possible error codes: bad_request, bad_request:user_not_found, bad_request:user_is_used",
@@ -374,8 +374,8 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK"
+                    "204": {
+                        "description": "No Content"
                     },
                     "400": {
                         "description": "Possible error codes: bad_request, bad_request:invalid_password, bad_request:invalid_token, bad_request:mfa_disabled",
@@ -421,8 +421,8 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK"
+                    "204": {
+                        "description": "No Content"
                     },
                     "400": {
                         "description": "Possible error codes: bad_request, bad_request:invalid_token, bad_request:mfa_enabled",
@@ -523,6 +523,110 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Possible error codes: bad_request, bad_request:invalid_token, bad_request:mfa_disabled",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/auth/devices": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Active devices",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/dto.UserAuthDeviceResponse"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/users/auth/logout": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Logout current device",
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
+        "/users/auth/logout/all": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Logout all devices",
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
+        "/users/auth/logout/device": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Logout target device",
+                "parameters": [
+                    {
+                        "description": "Target device",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.UserAuthLogoutDeviceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Possible error codes: bad_request, bad_request:invalid_device",
                         "schema": {
                             "type": "string"
                         }
@@ -643,6 +747,9 @@ const docTemplate = `{
                 "email": {
                     "type": "string"
                 },
+                "name": {
+                    "type": "string"
+                },
                 "password": {
                     "type": "string"
                 },
@@ -725,6 +832,9 @@ const docTemplate = `{
                 "created": {
                     "type": "string"
                 },
+                "device": {
+                    "type": "string"
+                },
                 "email": {
                     "type": "string"
                 },
@@ -733,6 +843,9 @@ const docTemplate = `{
                 },
                 "mfa": {
                     "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
                 },
                 "role": {
                     "$ref": "#/definitions/dto.AdminUserRoleResponse"
@@ -813,11 +926,74 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.UserAuthDeviceResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "session": {
+                    "$ref": "#/definitions/dto.UserAuthSessionResponse"
+                }
+            }
+        },
+        "dto.UserAuthLogoutDeviceRequest": {
+            "type": "object",
+            "properties": {
+                "device": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.UserAuthMetadataRequest": {
+            "type": "object",
+            "properties": {
+                "browser_name": {
+                    "type": "string"
+                },
+                "browser_version": {
+                    "type": "string"
+                },
+                "engine_name": {
+                    "type": "string"
+                },
+                "engine_version": {
+                    "type": "string"
+                },
+                "ip": {
+                    "type": "string"
+                },
+                "location": {
+                    "type": "string"
+                },
+                "model": {
+                    "type": "string"
+                },
+                "os_full_name": {
+                    "type": "string"
+                },
+                "os_name": {
+                    "type": "string"
+                },
+                "os_version": {
+                    "type": "string"
+                },
+                "platform": {
+                    "type": "string"
+                },
+                "user_agent": {
+                    "type": "string"
+                }
+            }
+        },
         "dto.UserAuthRequest": {
             "type": "object",
             "properties": {
                 "login": {
                     "type": "string"
+                },
+                "metadata": {
+                    "$ref": "#/definitions/dto.UserAuthMetadataRequest"
                 },
                 "password": {
                     "type": "string"
@@ -834,6 +1010,50 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "refresh_token": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.UserAuthSessionResponse": {
+            "type": "object",
+            "properties": {
+                "browser_name": {
+                    "type": "string"
+                },
+                "browser_version": {
+                    "type": "string"
+                },
+                "engine_name": {
+                    "type": "string"
+                },
+                "engine_version": {
+                    "type": "string"
+                },
+                "ip": {
+                    "type": "string"
+                },
+                "issued_at": {
+                    "type": "string"
+                },
+                "location": {
+                    "type": "string"
+                },
+                "model": {
+                    "type": "string"
+                },
+                "os_full_name": {
+                    "type": "string"
+                },
+                "os_name": {
+                    "type": "string"
+                },
+                "os_version": {
+                    "type": "string"
+                },
+                "platform": {
+                    "type": "string"
+                },
+                "user_agent": {
                     "type": "string"
                 }
             }
@@ -862,6 +1082,9 @@ const docTemplate = `{
                     "items": {
                         "type": "string"
                     }
+                },
+                "device": {
+                    "type": "string"
                 },
                 "expires": {
                     "type": "integer"
